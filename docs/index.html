@@ -1,0 +1,1133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Our Next Home</title>
+<meta name="theme-color" content="#0e7490">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<script src="config.js"></script>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --panel2: #fbfcfd; --head: #eef1f4; --line: #d9dde3; --text: #1f2933; --muted: #66727f;
+  --accent: #0e7490; --accent-ink: #ffffff; --danger: #b42318;
+  --ns-bg: #fff4c2; --ns-fg: #7a4b00;   /* Not seen */
+  --se-bg: #d6f5dc; --se-fg: #14532d;   /* Seen */
+  --nr-bg: #e7e9ec; --nr-fg: #6b7280;   /* Not relevant */
+  --dirty: #2563eb; --found: #dbeafe; --mine: #e0f2fe; --theirs: #f3f4f6;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111418; --panel: #1a1e24; --panel2: #1f242b; --head: #232931; --line: #343b45; --text: #e6e9ed; --muted: #9aa5b1;
+    --accent: #22a3c2; --accent-ink: #06222a; --danger: #f97066;
+    --ns-bg: #3a3112; --ns-fg: #f5d77a; --se-bg: #12351f; --se-fg: #9be3b0; --nr-bg: #23272d; --nr-fg: #8a929c;
+    --dirty: #60a5fa; --found: #1e3a5f; --mine: #0c3446; --theirs: #262b32;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111418; --panel: #1a1e24; --panel2: #1f242b; --head: #232931; --line: #343b45; --text: #e6e9ed; --muted: #9aa5b1;
+  --accent: #22a3c2; --accent-ink: #06222a; --danger: #f97066;
+  --ns-bg: #3a3112; --ns-fg: #f5d77a; --se-bg: #12351f; --se-fg: #9be3b0; --nr-bg: #23272d; --nr-fg: #8a929c;
+  --dirty: #60a5fa; --found: #1e3a5f; --mine: #0c3446; --theirs: #262b32;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 11px; cursor: pointer; white-space: nowrap; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.danger { color: var(--danger); }
+button.icon { border: 0; background: transparent; padding: 2px 5px; font-size: 15px; }
+button:disabled { opacity: .5; cursor: default; }
+input, select, textarea { border: 1px solid var(--line); border-radius: 5px; padding: 4px 7px; background: var(--panel); min-width: 0; }
+textarea { resize: vertical; width: 100%; }
+a { color: inherit; }
+
+.topbar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+.who { color: var(--muted); font-size: 13px; }
+.spacer { flex: 1; }
+.actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+#search { width: 220px; }
+#save.dirty { box-shadow: 0 0 0 2px var(--dirty); }
+.statusline { display: flex; gap: 12px; padding: 6px 16px; color: var(--muted); font-size: 12px; align-items: center; flex-wrap: wrap; }
+.statusline .err { color: var(--danger); font-weight: 600; }
+.legend span { display: inline-block; padding: 1px 8px; border-radius: 10px; margin-right: 4px; }
+
+main { flex: 1; min-height: 0; padding: 0 14px 14px; display: flex; }
+.table-wrap { flex: 1; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
+thead th { position: sticky; z-index: 2; background: var(--head); text-align: left; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+thead tr.labels th { top: 0; cursor: pointer; user-select: none; }
+thead tr.filters th { top: 33px; padding: 4px 6px; font-weight: 400; }
+thead th .arrow { color: var(--muted); font-size: 11px; }
+.filters input, .filters select { width: 100%; font-size: 12px; padding: 2px 5px; }
+.filters input[type=search] { width: 96px; }
+.filters th { max-width: 260px; }
+.filters th.c-description input[type=search] { width: 100%; }
+.range { display: flex; gap: 3px; }
+.range input { width: 44px; }
+th.c-actions, td.c-actions { position: sticky; right: 0; z-index: 1; background: inherit; box-shadow: -6px 0 8px -6px rgba(0,0,0,.25); }
+thead th.c-actions { z-index: 3; background: var(--head); }
+tbody td { padding: 5px 8px; border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent); vertical-align: top; max-width: 260px; }
+tbody tr.st-0 { background: var(--ns-bg); color: var(--ns-fg); }
+tbody tr.st-1 { background: var(--se-bg); color: var(--se-fg); }
+tbody tr.st-2 { background: var(--nr-bg); color: var(--nr-fg); }
+tbody tr.st-2 td:not(.c-actions):not(.c-status) { opacity: .75; }
+tbody tr.deleted td:not(.c-actions) { text-decoration: line-through; opacity: .45; }
+tbody tr.new td:first-child { box-shadow: inset 3px 0 0 var(--dirty); }
+td.dirty { box-shadow: inset 0 -2px 0 var(--dirty); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.c-description .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-width: 220px; cursor: pointer; }
+td.c-description .clamp.open { display: block; }
+td.c-status select { background: transparent; border-color: color-mix(in srgb, currentColor 35%, transparent); color: inherit; }
+td.c-actions { white-space: nowrap; }
+.nowrap { white-space: nowrap; }
+.mini { font-size: 12px; text-decoration: none; margin-left: 4px; opacity: .85; }
+.wa { display: inline-block; background: #25d366; color: #fff; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 0 4px; line-height: 15px; vertical-align: 1px; }
+.chat-btn { position: relative; }
+.heart { font-size: 17px; line-height: 1; padding: 0 3px; }
+.heart[aria-pressed="false"] { opacity: .55; }
+.heart:hover { transform: scale(1.15); }
+td.c-liked { text-align: center; }
+.badge { position: absolute; top: -4px; right: -6px; background: var(--danger); color: #fff; border-radius: 9px; font-size: 10px; padding: 0 5px; line-height: 16px; font-weight: 700; }
+.empty { padding: 40px; text-align: center; color: var(--muted); }
+
+/* Popover for the status filter */
+.pop { position: relative; }
+.pop-list { position: absolute; z-index: 5; top: calc(100% + 3px); left: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; box-shadow: 0 6px 20px rgba(0,0,0,.18); display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
+.pop-list[hidden] { display: none; }
+.pop-list label { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+
+/* Cards (phone width) */
+.cards { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.card { border-radius: 10px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+.card.st-0 { background: var(--ns-bg); color: var(--ns-fg); }
+.card.st-1 { background: var(--se-bg); color: var(--se-fg); }
+.card.st-2 { background: var(--nr-bg); color: var(--nr-fg); }
+.card.deleted { opacity: .45; text-decoration: line-through; }
+.card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.card-title { font-weight: 700; font-size: 15px; }
+.card-price { font-weight: 700; white-space: nowrap; }
+.card-facts { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0; font-size: 13px; }
+.card-desc { font-size: 13px; margin: 4px 0; }
+.card-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.card-row select { background: transparent; color: inherit; }
+#filterPanel { background: var(--panel); border-bottom: 1px solid var(--line); padding: 10px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+#filterPanel[hidden] { display: none; }
+#filterPanel label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+#filterPanel input, #filterPanel select { color: var(--text); }
+
+/* Dialogs */
+dialog { border: 1px solid var(--line); border-radius: 12px; padding: 0; width: min(760px, 94vw); max-height: 92vh; background: var(--panel); color: var(--text); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
+dialog::backdrop { background: rgba(15, 23, 42, .4); }
+.dlg { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.dlg h2 { margin: 0; font-size: 17px; }
+.dlg .buttons { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; align-items: center; }
+.hint { color: var(--muted); font-size: 12px; }
+.analyze { border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.analyze .row { display: flex; gap: 8px; align-items: center; }
+.analyze .row input { flex: 1; }
+.drop { border: 1.5px dashed var(--line); border-radius: 8px; padding: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 52px; }
+.drop.over { border-color: var(--accent); background: var(--found); }
+.thumb { position: relative; }
+.thumb img { height: 64px; border-radius: 5px; display: block; }
+.thumb button { position: absolute; top: -6px; right: -6px; border-radius: 50%; padding: 0 6px; font-size: 12px; line-height: 18px; }
+.note { padding: 7px 10px; border-radius: 6px; background: var(--found); font-size: 13px; }
+.note.warn { background: var(--ns-bg); color: var(--ns-fg); }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+.form label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+.form label.wide { grid-column: 1 / -1; }
+.form label.chk { flex-direction: row; align-items: center; gap: 8px; font-size: 14px; color: var(--text); padding-top: 18px; }
+.form input, .form select, .form textarea { color: var(--text); font-size: 14px; }
+.form .found { background: var(--found); }
+.conflict { display: grid; grid-template-columns: 110px 1fr 1fr; gap: 6px; align-items: stretch; }
+.conflict label { border-radius: 6px; padding: 6px 8px; display: flex; gap: 6px; align-items: flex-start; cursor: pointer; }
+.conflict label.mine { background: var(--mine); }
+.conflict label.theirs { background: var(--theirs); }
+
+/* Chat drawer */
+#chat { position: fixed; inset: 0 0 0 auto; width: min(460px, 100vw); background: var(--panel); border-left: 1px solid var(--line); box-shadow: -10px 0 30px rgba(0,0,0,.18); display: flex; flex-direction: column; z-index: 20; }
+#chat[hidden] { display: none; }
+.chat-head { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: flex-start; }
+.chat-head .t { flex: 1; }
+.chat-head .t b { font-size: 15px; }
+.chat-tabs { display: flex; border-bottom: 1px solid var(--line); }
+.chat-tabs button { flex: 1; border: 0; border-radius: 0; background: transparent; padding: 8px; border-bottom: 2px solid transparent; }
+.chat-tabs button[aria-selected="true"] { border-bottom-color: var(--accent); font-weight: 600; }
+.chat-body { flex: 1; overflow: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.msg { max-width: 85%; padding: 6px 10px; border-radius: 12px; background: var(--head); align-self: flex-start; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.me { background: var(--accent); color: var(--accent-ink); align-self: flex-end; }
+.msg .by { font-size: 11px; opacity: .75; margin-bottom: 2px; }
+.day { align-self: center; font-size: 11px; color: var(--muted); }
+.chat-foot { border-top: 1px solid var(--line); padding: 8px; display: flex; gap: 6px; align-items: flex-end; }
+.chat-foot[hidden] { display: none; }
+.chat-foot textarea { min-height: 38px; max-height: 140px; }
+.call { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--panel2); }
+.call .by { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; }
+.call-form { display: grid; grid-template-columns: 140px 1fr; gap: 6px; }
+.call-form textarea { grid-column: 1 / -1; }
+.next-step { display: grid; grid-template-columns: 1fr 150px; gap: 6px 10px; }
+.next-step label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
+.next-step input { color: var(--text); }
+.section-title { font-weight: 600; margin-top: 4px; }
+
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 8px; z-index: 50; font-size: 13px; }
+.toast[hidden] { display: none; }
+.center { margin: auto; padding: 30px; text-align: center; color: var(--muted); max-width: 520px; }
+
+@media (max-width: 760px) {
+  .topbar { padding: 8px 12px; }
+  #search { width: 100%; order: 10; }
+  main { padding: 0 12px 12px; }
+  .form { grid-template-columns: 1fr; }
+  .statusline .legend { display: none; }
+  .conflict { grid-template-columns: 1fr 1fr; }
+  .conflict .k { grid-column: 1 / -1; font-weight: 600; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🏡 Our Next Home</div>
+  <span class="who" id="who"></span>
+  <span class="spacer"></span>
+  <input id="search" type="search" placeholder="Search everything…" dir="auto">
+  <div class="actions">
+    <button id="filtersBtn" hidden>⚲ Filters</button>
+    <button id="addBtn" class="primary">+ Add home</button>
+    <button id="save" title="Save your changes to the sheet">💾 Save</button>
+    <button id="reload" title="Load the latest from the sheet">⟳</button>
+  </div>
+</header>
+<div id="filterPanel" hidden></div>
+<div class="statusline">
+  <span id="count"></span>
+  <span id="msg"></span>
+  <span class="spacer"></span>
+  <span class="legend"><span class="st-0" style="background:var(--ns-bg);color:var(--ns-fg)">Not seen</span><span style="background:var(--se-bg);color:var(--se-fg)">Seen</span><span style="background:var(--nr-bg);color:var(--nr-fg)">Not relevant</span></span>
+  <button id="clearFilters" class="icon" title="Clear all filters" hidden>✕ Clear filters</button>
+</div>
+<main id="main"><div class="center">Loading…</div></main>
+
+<aside id="chat" hidden>
+  <div class="chat-head">
+    <div class="t" id="chatTitle"></div>
+    <button class="icon" id="chatClose" title="Close">✕</button>
+  </div>
+  <div class="chat-tabs">
+    <button id="tabChat" aria-selected="true">💬 Chat</button>
+    <button id="tabCalls" aria-selected="false">📞 Calls &amp; next step</button>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-foot" id="chatFoot">
+    <textarea id="chatInput" rows="1" dir="auto" placeholder="Write a message… (Enter sends, Shift+Enter new line)"></textarea>
+    <button class="primary" id="chatSend">Send</button>
+  </div>
+</aside>
+
+<dialog id="homeDlg"><form method="dialog" class="dlg" id="homeForm" autocomplete="off"></form></dialog>
+<dialog id="conflictDlg"><div class="dlg" id="conflictBody"></div></dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+'use strict';
+const STATUSES = ['Not seen', 'Seen', 'Not relevant'];
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const norm = v => (v === null || v === undefined || v === false) ? '' : String(v).trim();
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const fmtNum = n => (n === '' || n === null || n === undefined || isNaN(n)) ? '' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 1 });
+const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const MOCK = /[?&]mock=1/.test(location.search);
+
+// ---------------------------------------------------------------------------
+// Server
+// ---------------------------------------------------------------------------
+let TOKEN = '';
+// text/plain keeps this a "simple" request, so Apps Script needs no CORS preflight.
+function call(fn, ...args) {
+  if (MOCK) return Mock.call(fn, args);
+  return fetch(window.OUR_NEXT_HOME_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ fn: fn, args: [TOKEN, ...args] }),
+  }).then(r => r.json()).then(r => { if (!r.ok) throw new Error(r.error); return r.data; });
+}
+
+// ---------------------------------------------------------------------------
+// State: S = what the sheet has; D = this page's unsaved changes on top of it
+// ---------------------------------------------------------------------------
+let S = { me: '', users: [], columns: [], homes: [], unread: {}, calls: {}, analyzeReady: false };
+const D = { edits: {}, adds: [], deletes: {} };   // edits[id][key] = {from, to}; deletes[id] = updated_at
+let tmpSeq = 1;
+let F = store.get('onh.filters', {});             // filters[key] = {q} | {min,max} | {v} | {set}
+let SORT = store.get('onh.sort', null);           // {key, dir}
+let searchQ = '';
+
+const COMPUTED = { key: 'ppm', label: '₪/m²', type: 'number', computed: true };
+function viewColumns() {
+  const out = [];
+  S.columns.forEach(c => { out.push(c); if (c.key === 'price') out.push(COMPUTED); });
+  return out;
+}
+const col = key => S.columns.find(c => c.key === key);
+
+function dirtyCount() {
+  return Object.keys(D.edits).length + D.adds.length + Object.keys(D.deletes).length;
+}
+
+function rowsAll() {
+  const list = S.homes.map(h => {
+    const e = D.edits[h.id] || {};
+    const r = Object.assign({}, h);
+    Object.keys(e).forEach(k => { r[k] = e[k].to; });
+    r._dirty = Object.keys(e);
+    r._deleted = h.id in D.deletes;
+    return r;
+  });
+  D.adds.forEach(a => list.push(Object.assign({}, a, { id: a._tmp, _new: true, _dirty: [], created_at: a._at })));
+  list.forEach(r => {
+    const p = Number(r.price), b = Number(r.built_m2);
+    r.ppm = p > 0 && b > 0 ? Math.round(p / b) : '';
+  });
+  return list;
+}
+
+function setField(id, key, value) {
+  if (String(id).indexOf('tmp') === 0) {
+    const a = D.adds.find(x => x._tmp === id);
+    if (a) a[key] = value;
+    return;
+  }
+  const h = S.homes.find(x => x.id === id);
+  if (!h) return;
+  const e = D.edits[id] || (D.edits[id] = {});
+  const from = e[key] ? e[key].from : h[key];
+  if (norm(value) === norm(from)) delete e[key];
+  else e[key] = { from: from, to: value };
+  if (!Object.keys(e).length) delete D.edits[id];
+}
+
+function homeById(id) { return rowsAll().find(r => r.id === id); }
+
+// ---------------------------------------------------------------------------
+// Filters and sort
+// ---------------------------------------------------------------------------
+function isNumeric(c) { return c.type === 'number' || c.type === 'money'; }
+
+function passes(r) {
+  if (searchQ) {
+    const hay = viewColumns().map(c => r[c.key]).join(' ').toLowerCase();
+    if (hay.indexOf(searchQ.toLowerCase()) < 0) return false;
+  }
+  return viewColumns().every(c => {
+    const f = F[c.key];
+    if (!f || c.computed) return true;
+    const v = r[c.key];
+    if (isNumeric(c)) {
+      const n = Number(v);
+      if (f.min !== undefined && f.min !== '' && !(v !== '' && n >= Number(f.min))) return false;
+      if (f.max !== undefined && f.max !== '' && !(v !== '' && n <= Number(f.max))) return false;
+      return true;
+    }
+    if (c.type === 'checkbox') return !f.v || (f.v === 'yes' ? v === true : v !== true);
+    if (c.type === 'select') return !f.set || !f.set.length || f.set.indexOf(v) >= 0;
+    if (!f.q) return true;
+    if (f.q === '-') return norm(v) === '';          // "-" finds blanks
+    return String(v || '').toLowerCase().indexOf(f.q.toLowerCase()) >= 0;
+  });
+}
+
+function activeFilters() {
+  return Object.keys(F).filter(k => {
+    const f = F[k];
+    if (k === COMPUTED.key) return false;
+    return f && (f.q || f.v || (f.set && f.set.length) || (f.min !== undefined && f.min !== '') || (f.max !== undefined && f.max !== ''));
+  }).length + (searchQ ? 1 : 0);
+}
+
+function sorted(list) {
+  if (!SORT) return list.slice().sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+  const c = viewColumns().find(x => x.key === SORT.key);
+  if (!c) return list;
+  const dir = SORT.dir === 'desc' ? -1 : 1;
+  return list.slice().sort((a, b) => {
+    let x = a[c.key], y = b[c.key];
+    if (c.type === 'select') { x = c.options.indexOf(x); y = c.options.indexOf(y); }
+    const bx = norm(x) === '', by = norm(y) === '';
+    if (bx || by) return bx === by ? 0 : bx ? 1 : -1;   // blanks last
+    if (isNumeric(c) || c.type === 'select' || c.type === 'checkbox') return (Number(x) - Number(y)) * dir;
+    return String(x).localeCompare(String(y), 'he') * dir;
+  });
+}
+
+function saveFilters() { store.set('onh.filters', F); store.set('onh.sort', SORT); }
+
+function filterControl(c) {
+  const f = F[c.key] || {};
+  const wrap = document.createElement('div');
+  if (c.computed) return wrap;   // no filter on ₪/m²
+  const upd = (patch) => { F[c.key] = Object.assign({}, F[c.key] || {}, patch); saveFilters(); renderBody(); };
+  if (isNumeric(c)) {
+    wrap.className = 'range';
+    ['min', 'max'].forEach(k => {
+      const i = document.createElement('input');
+      i.type = 'text'; i.inputMode = 'decimal'; i.placeholder = k; i.value = f[k] || '';
+      i.oninput = () => upd({ [k]: i.value.replace(/[,\s₪]/g, '') });
+      wrap.appendChild(i);
+    });
+  } else if (c.type === 'checkbox') {
+    const s = document.createElement('select');
+    s.innerHTML = c.icon ? `<option value="">any</option><option value="yes">${esc(c.icon)}</option><option value="no">not ${esc(c.icon)}</option>`
+                         : '<option value="">any</option><option value="yes">yes</option><option value="no">no</option>';
+    s.value = f.v || '';
+    s.onchange = () => upd({ v: s.value });
+    wrap.appendChild(s);
+  } else if (c.type === 'select') {
+    wrap.className = 'pop';
+    const b = document.createElement('button');
+    const label = () => { const n = (F[c.key] && F[c.key].set || []).length; b.textContent = n ? n + ' chosen ▾' : 'all ▾'; };
+    b.type = 'button'; b.style.width = '100%'; b.style.fontSize = '12px'; b.style.padding = '2px 5px';
+    const list = document.createElement('div');
+    list.className = 'pop-list'; list.hidden = true;
+    c.options.forEach(o => {
+      const l = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = (f.set || []).indexOf(o) >= 0;
+      cb.onchange = () => {
+        const set = new Set(F[c.key] && F[c.key].set || []);
+        cb.checked ? set.add(o) : set.delete(o);
+        upd({ set: Array.from(set) }); label();
+      };
+      l.appendChild(cb); l.appendChild(document.createTextNode(o));
+      list.appendChild(l);
+    });
+    b.onclick = (ev) => { ev.stopPropagation(); list.hidden = !list.hidden; };
+    list.onclick = ev => ev.stopPropagation();
+    document.addEventListener('click', () => { list.hidden = true; });
+    label();
+    wrap.appendChild(b); wrap.appendChild(list);
+  } else {
+    const i = document.createElement('input');
+    i.type = 'search'; i.placeholder = 'contains'; i.dir = 'auto'; i.value = f.q || '';
+    i.title = 'Type text to find. Type - to find blank cells.';
+    i.oninput = () => upd({ q: i.value.trim() });
+    wrap.appendChild(i);
+  }
+  return wrap;
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+const phoneMQ = window.matchMedia('(max-width: 760px)');
+let builtFor = '';
+
+function build() {
+  const mode = phoneMQ.matches ? 'cards' : 'table';
+  $('#filtersBtn').hidden = mode !== 'cards';
+  if (mode === 'table') {
+    $('#filterPanel').hidden = true;
+    const cols = viewColumns();
+    $('#main').innerHTML = '<div class="table-wrap"><table><thead><tr class="labels"></tr><tr class="filters"></tr></thead><tbody></tbody></table></div>';
+    const labels = $('thead tr.labels'), filters = $('thead tr.filters');
+    cols.forEach(c => {
+      const th = document.createElement('th');
+      th.innerHTML = esc(c.icon || c.label) + ' <span class="arrow"></span>';
+      th.dataset.key = c.key;
+      th.title = (c.icon ? c.label + ' · ' : '') + 'Click to sort';
+      th.onclick = () => {
+        if (!SORT || SORT.key !== c.key) SORT = { key: c.key, dir: 'asc' };
+        else if (SORT.dir === 'asc') SORT.dir = 'desc';
+        else SORT = null;
+        saveFilters(); renderBody();
+      };
+      labels.appendChild(th);
+      const fth = document.createElement('th');
+      fth.className = 'c-' + c.key;
+      fth.appendChild(filterControl(c));
+      filters.appendChild(fth);
+    });
+    const th = document.createElement('th'); th.className = 'c-actions'; th.textContent = 'Chat'; labels.appendChild(th);
+    const fth = document.createElement('th'); fth.className = 'c-actions'; filters.appendChild(fth);
+  } else {
+    $('#main').innerHTML = '<div class="cards" id="cards"></div>';
+    const p = $('#filterPanel');
+    p.innerHTML = '';
+    const sortL = document.createElement('label');
+    sortL.className = '';
+    sortL.innerHTML = 'Sort by<select id="sortSel"><option value="">Newest first</option>' +
+      viewColumns().map(c => `<option value="${c.key}:asc">${esc(c.label)} ↑</option><option value="${c.key}:desc">${esc(c.label)} ↓</option>`).join('') + '</select>';
+    p.appendChild(sortL);
+    const sel = sortL.querySelector('select');
+    sel.value = SORT ? SORT.key + ':' + SORT.dir : '';
+    sel.onchange = () => { const [k, d] = sel.value.split(':'); SORT = k ? { key: k, dir: d } : null; saveFilters(); renderBody(); };
+    viewColumns().filter(c => !c.computed).forEach(c => {
+      const l = document.createElement('label');
+      l.textContent = c.icon ? c.icon + ' ' + c.label : c.label;
+      l.appendChild(filterControl(c));
+      p.appendChild(l);
+    });
+  }
+  builtFor = mode;
+  renderBody();
+}
+
+function linkCell(link) {
+  if (!link) return '';
+  let host = '';
+  try { host = new URL(link).hostname.replace(/^www\.|^m\./, ''); } catch (e) { return esc(link); }
+  const name = /yad2/.test(host) ? 'Yad2' : /facebook|fb\./.test(host) ? 'Facebook' : host;
+  return `<a href="${esc(link)}" target="_blank" rel="noopener">🔗 ${esc(name)}</a>`;
+}
+
+function mapLinks(r) {
+  const q = [r.street, r.city].filter(Boolean).join(', ');
+  if (!q) return '';
+  const e = encodeURIComponent(q);
+  return `<a class="mini" href="https://www.google.com/maps/search/?api=1&query=${e}" target="_blank" rel="noopener" title="Google Maps">🗺️</a>` +
+         `<a class="mini" href="https://waze.com/ul?q=${e}" target="_blank" rel="noopener" title="Waze">🚗</a>`;
+}
+
+function phoneLinks(p) {
+  if (!p) return '';
+  const d = String(p).replace(/\D/g, '');
+  const intl = d.indexOf('972') === 0 ? d : d.indexOf('0') === 0 ? '972' + d.slice(1) : d;
+  return `<span class="nowrap">${esc(p)}</span><a class="mini" href="tel:${esc(d)}" title="Call">📞</a>` +
+         `<a class="mini" href="https://wa.me/${esc(intl)}" target="_blank" rel="noopener" title="WhatsApp"><span class="wa">WA</span></a>`;
+}
+
+function cellHtml(c, r) {
+  const v = r[c.key];
+  switch (c.type) {
+    case 'link': return linkCell(v);
+    case 'money': return v === '' ? '' : '₪' + fmtNum(v);
+    case 'number': return c.key === 'ppm' && v !== '' ? '₪' + fmtNum(v) : fmtNum(v);
+    case 'checkbox': if (c.icon) return `<button class="icon heart" data-heart="${c.key}" ${r._deleted ? 'disabled' : ''} title="${esc(c.label)}" aria-pressed="${!!v}">${v ? esc(c.icon) : '🤍'}</button>`;
+      return `<input type="checkbox" data-k="${c.key}" ${v ? 'checked' : ''} ${r._deleted ? 'disabled' : ''} aria-label="${esc(c.label)}">`;
+    case 'select': return `<select data-k="${c.key}" ${r._deleted ? 'disabled' : ''}>${c.options.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    case 'phone': return phoneLinks(v);
+    case 'longtext': return v ? `<div class="clamp" dir="auto" title="Click to expand">${esc(v)}</div>` : '';
+    case 'date': return v ? `<span class="nowrap">${esc(fmtDate(v))}</span>` : '';
+    default: return `<span dir="auto">${esc(v)}</span>` + (c.key === 'street' ? mapLinks(r) : '');
+  }
+}
+
+function fmtDate(v) {
+  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1].slice(2)}` : v;
+}
+
+function statusClass(r) { const i = STATUSES.indexOf(r.status); return 'st-' + (i < 0 ? 0 : i); }
+
+function chatButton(r) {
+  const n = S.unread[r.id] || 0;
+  return `<button class="icon chat-btn" data-act="chat" title="Chat about this home${n ? ' (' + n + ' new)' : ''}">💬${n ? `<span class="badge">${n}</span>` : ''}</button>`;
+}
+
+function actionButtons(r) {
+  if (r._deleted) return `<button class="icon" data-act="undelete" title="Undo delete">↶</button>`;
+  return `<button class="icon" data-act="edit" title="Edit">✏️</button><button class="icon" data-act="delete" title="Delete">🗑️</button>`;
+}
+
+function renderBody() {
+  const all = rowsAll();
+  const shown = sorted(all.filter(passes));
+  const n = dirtyCount();
+  $('#save').textContent = n ? `💾 Save (${n})` : '💾 Save';
+  $('#save').classList.toggle('dirty', n > 0);
+  $('#count').textContent = `${all.length} home${all.length === 1 ? '' : 's'}` + (shown.length !== all.length ? ` · ${shown.length} shown` : '') + (n ? ` · ${n} unsaved` : '');
+  const af = activeFilters();
+  $('#clearFilters').hidden = !af;
+  $('#filtersBtn').textContent = af ? `⚲ Filters (${af})` : '⚲ Filters';
+
+  if (builtFor === 'table') {
+    document.querySelectorAll('thead tr.labels th').forEach(th => {
+      const a = th.querySelector('.arrow');
+      if (a) a.textContent = SORT && SORT.key === th.dataset.key ? (SORT.dir === 'asc' ? '▲' : '▼') : '';
+    });
+    const cols = viewColumns();
+    const tb = $('tbody');
+    if (!shown.length) {
+      tb.innerHTML = `<tr><td colspan="${cols.length + 1}" class="empty">${all.length ? 'No home matches the filters.' : 'No homes yet. Press <b>+ Add home</b> and paste a link.'}</td></tr>`;
+      return;
+    }
+    tb.innerHTML = shown.map(r => `<tr data-id="${esc(r.id)}" class="${statusClass(r)}${r._deleted ? ' deleted' : ''}${r._new ? ' new' : ''}">` +
+      cols.map(c => `<td class="c-${c.key}${isNumeric(c) ? ' num' : ''}${r._dirty.indexOf(c.key) >= 0 ? ' dirty' : ''}">${cellHtml(c, r)}</td>`).join('') +
+      `<td class="c-actions">${r._new ? '<span class="icon" title="Save first to chat">·</span>' : chatButton(r)}${actionButtons(r)}</td></tr>`).join('');
+  } else {
+    const box = $('#cards');
+    if (!shown.length) { box.innerHTML = `<div class="empty">${all.length ? 'No home matches the filters.' : 'No homes yet. Tap <b>+ Add home</b> and paste a link.'}</div>`; return; }
+    const sc = col('status'), bc = col('basement');
+    box.innerHTML = shown.map(r => {
+      const facts = [];
+      if (r.rooms !== '') facts.push(fmtNum(r.rooms) + ' rooms');
+      if (r.built_m2 !== '') facts.push(fmtNum(r.built_m2) + ' m² built');
+      if (r.plot_m2 !== '') facts.push(fmtNum(r.plot_m2) + ' m² plot');
+      if (r.ppm !== '') facts.push('₪' + fmtNum(r.ppm) + '/m²');
+      if (r.basement) facts.push('Basement');
+      const hc = S.columns.find(c => c.type === 'checkbox' && c.icon);
+      const extra = S.columns.filter(c => !c.icon && ['link', 'city', 'street', 'plot_m2', 'built_m2', 'rooms', 'basement', 'description', 'price', 'seller_name', 'seller_phone', 'status'].indexOf(c.key) < 0 && norm(r[c.key]) !== '')
+        .map(c => `<div class="card-desc"><b>${esc(c.label)}:</b> <span dir="auto">${esc(c.type === 'date' ? fmtDate(r[c.key]) : r[c.key])}</span></div>`).join('');
+      return `<div class="card ${statusClass(r)}${r._deleted ? ' deleted' : ''}" data-id="${esc(r.id)}">
+        <div class="card-top">${hc ? cellHtml(hc, r) : ''}<div class="card-title" style="flex:1" dir="auto">${esc([r.street, r.city].filter(Boolean).join(', ') || 'No address yet')}${mapLinks(r)}</div>
+        <div class="card-price">${r.price !== '' ? '₪' + fmtNum(r.price) : ''}</div></div>
+        <div class="card-facts">${facts.map(esc).join(' · ')}</div>
+        ${r.description ? `<div class="card-desc clamp" dir="auto">${esc(r.description)}</div>` : ''}
+        ${extra}
+        <div class="card-row">${r.seller_name ? `<span dir="auto">${esc(r.seller_name)}</span>` : ''} ${phoneLinks(r.seller_phone)}</div>
+        <div class="card-row">${sc ? cellHtml(sc, r) : ''} ${linkCell(r.link)} <span class="spacer"></span>${r._new ? '' : chatButton(r)}${actionButtons(r)}</div>
+      </div>`;
+    }).join('');
+  }
+}
+
+// Clicks and changes inside the table / cards
+document.addEventListener('click', ev => {
+  const heart = ev.target.closest('[data-heart]');
+  if (heart) {
+    const holder = heart.closest('[data-id]');
+    const r = holder && homeById(holder.dataset.id);
+    if (r) { setField(r.id, heart.dataset.heart, !r[heart.dataset.heart]); renderBody(); }
+    return;
+  }
+  const btn = ev.target.closest('[data-act]');
+  const clamp = ev.target.closest('.clamp');
+  if (clamp && !btn) { clamp.classList.toggle('open'); return; }
+  if (!btn) return;
+  const holder = btn.closest('[data-id]');
+  if (!holder) return;
+  const id = holder.dataset.id;
+  const act = btn.dataset.act;
+  if (act === 'edit') openHome(id);
+  else if (act === 'chat') openChat(id);
+  else if (act === 'delete') {
+    if (id.indexOf('tmp') === 0) { D.adds = D.adds.filter(a => a._tmp !== id); renderBody(); return; }
+    const h = S.homes.find(x => x.id === id);
+    D.deletes[id] = h ? h.updated_at : null;
+    delete D.edits[id];
+    renderBody();
+    toast('Marked for delete. Press Save to delete it, or ↶ to undo.');
+  } else if (act === 'undelete') { delete D.deletes[id]; renderBody(); }
+});
+document.addEventListener('change', ev => {
+  const el = ev.target;
+  if (!el.dataset || !el.dataset.k) return;
+  const holder = el.closest('[data-id]');
+  if (!holder || el.closest('dialog')) return;
+  setField(holder.dataset.id, el.dataset.k, el.type === 'checkbox' ? el.checked : el.value);
+  renderBody();
+});
+
+// ---------------------------------------------------------------------------
+// Add / edit dialog with Analyze
+// ---------------------------------------------------------------------------
+let editingId = null;
+let images = [];       // [{mime, data, url}]
+
+function inputFor(c, v) {
+  const a = `name="${c.key}" id="f-${c.key}"`;
+  switch (c.type) {
+    case 'longtext': return `<textarea ${a} rows="3" dir="auto">${esc(v)}</textarea>`;
+    case 'checkbox': return `<input type="checkbox" ${a} ${v ? 'checked' : ''}>`;
+    case 'select': return `<select ${a}>${c.options.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    case 'date': return `<input type="date" ${a} value="${esc(v)}">`;
+    case 'number': case 'money': return `<input type="text" inputmode="decimal" ${a} value="${esc(v === '' ? '' : fmtNum(v))}">`;
+    case 'phone': return `<input type="tel" ${a} value="${esc(v)}" dir="ltr">`;
+    case 'link': return `<input type="url" ${a} value="${esc(v)}" dir="ltr" placeholder="https://…">`;
+    default: return `<input type="text" ${a} value="${esc(v)}" dir="auto">`;
+  }
+}
+
+function openHome(id) {
+  editingId = id || null;
+  images = [];
+  const r = id ? homeById(id) : null;
+  const linkCol = col('link');
+  const others = S.columns.filter(c => c.key !== 'link');
+  const val = c => r ? r[c.key] : (c.type === 'select' ? c.options[0] : c.type === 'checkbox' ? false : '');
+  $('#homeForm').innerHTML = `
+    <h2>${r ? 'Edit home' : 'Add a home'}</h2>
+    <div class="analyze">
+      <div class="row">${linkCol ? inputFor(linkCol, val(linkCol)) : ''}<button type="button" class="primary" id="analyzeBtn">✨ Analyze</button></div>
+      <textarea id="pasteText" rows="2" dir="auto" placeholder="Optional: paste the post text here (needed for most Facebook posts)"></textarea>
+      <div class="drop" id="drop"><span class="hint" id="dropHint">Optional: paste (Ctrl+V), drop or <button type="button" id="pickImg">choose</button> screenshots of the ad</span>
+        <input type="file" id="imgFile" accept="image/*" multiple hidden></div>
+      <div id="analyzeNote" hidden></div>
+      ${S.analyzeReady ? '' : '<div class="note warn">Analyze isn\'t set up yet: the sheet needs a GEMINI_API_KEY (see README).</div>'}
+    </div>
+    <div class="form">${others.map(c => `<label class="${c.type === 'longtext' ? 'wide' : ''}${c.type === 'checkbox' ? ' chk' : ''}">${c.type === 'checkbox' ? inputFor(c, val(c)) + esc((c.icon ? c.icon + ' ' : '') + c.label) : esc(c.label) + inputFor(c, val(c))}</label>`).join('')}</div>
+    ${r && !r._new ? `<div class="hint">Added by ${esc(r.created_by || '?')}${r.updated_by ? ' · last change by ' + esc(r.updated_by) : ''}</div>` : ''}
+    <div class="buttons">
+      <span class="hint spacer">Changes are kept on this page until you press 💾 Save.</span>
+      <button type="button" id="cancelHome">Cancel</button>
+      <button type="submit" class="primary">${r ? 'OK' : 'Add'}</button>
+    </div>`;
+  const dlg = $('#homeDlg');
+  $('#cancelHome').onclick = () => dlg.close();
+  $('#analyzeBtn').onclick = runAnalyze;
+  $('#pickImg').onclick = () => $('#imgFile').click();
+  $('#imgFile').onchange = e => addImages(Array.from(e.target.files));
+  const drop = $('#drop');
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addImages(Array.from(e.dataTransfer.files)); };
+  $('#homeForm').onsubmit = submitHome;
+  dlg.showModal();
+  if (!r) setTimeout(() => { const l = $('#f-link'); if (l) l.focus(); }, 30);
+}
+
+$('#homeDlg').addEventListener('paste', e => {
+  const files = Array.from(e.clipboardData && e.clipboardData.files || []).filter(f => /^image\//.test(f.type));
+  if (files.length) { e.preventDefault(); addImages(files); }
+});
+
+function addImages(files) {
+  files.filter(f => /^image\//.test(f.type)).slice(0, 4 - images.length).forEach(f => {
+    resizeImage(f).then(im => { images.push(im); drawThumbs(); }).catch(() => toast('Couldn\'t read that image.'));
+  });
+  if (images.length + files.length > 4) toast('Up to 4 screenshots.');
+}
+
+/** Shrinks a screenshot to at most 1600 px on its long side, as JPEG. */
+function resizeImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(img, 0, 0, cv.width, cv.height);
+      const dataUrl = cv.toDataURL('image/jpeg', 0.85);
+      URL.revokeObjectURL(url);
+      resolve({ mime: 'image/jpeg', data: dataUrl.split(',')[1], url: dataUrl });
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function drawThumbs() {
+  const drop = $('#drop');
+  drop.querySelectorAll('.thumb').forEach(t => t.remove());
+  images.forEach((im, i) => {
+    const t = document.createElement('div');
+    t.className = 'thumb';
+    t.innerHTML = `<img src="${im.url}" alt="Screenshot ${i + 1}"><button type="button" title="Remove">×</button>`;
+    t.querySelector('button').onclick = () => { images.splice(i, 1); drawThumbs(); };
+    drop.insertBefore(t, $('#dropHint'));
+  });
+}
+
+function showNote(html, warn) {
+  const n = $('#analyzeNote');
+  n.hidden = !html;
+  n.className = 'note' + (warn ? ' warn' : '');
+  n.innerHTML = html || '';
+}
+
+function readForm() {
+  const out = {};
+  S.columns.forEach(c => {
+    const el = document.getElementById('f-' + c.key);
+    if (!el) return;
+    if (c.type === 'checkbox') out[c.key] = el.checked;
+    else if (c.type === 'number' || c.type === 'money') {
+      const s = el.value.replace(/[,\s₪]/g, '');
+      out[c.key] = s === '' || isNaN(Number(s)) ? '' : Number(s);
+    } else out[c.key] = el.value.trim();
+  });
+  return out;
+}
+
+function runAnalyze() {
+  const link = ($('#f-link') || {}).value || '';
+  const text = $('#pasteText').value;
+  if (!link.trim() && !text.trim() && !images.length) { showNote('Paste a link, the post text or a screenshot first.', true); return; }
+  const btn = $('#analyzeBtn');
+  btn.disabled = true; btn.textContent = 'Reading the ad…';
+  document.querySelectorAll('#homeForm .found').forEach(el => el.classList.remove('found'));
+  showNote('');
+  call('analyze', link.trim(), text, images.map(im => ({ mime: im.mime, data: im.data })))
+    .then(res => {
+      const notes = [];
+      if (res.duplicate && res.duplicate.id !== editingId) {
+        notes.push(`⚠️ This link is already in the list (${esc([res.duplicate.street, res.duplicate.city].filter(Boolean).join(', ') || 'a home')}). <button type="button" id="openDup">Open it</button>`);
+      }
+      const current = readForm();
+      let filled = 0, kept = 0;
+      Object.keys(res.fields || {}).forEach(k => {
+        const c = col(k), el = document.getElementById('f-' + k);
+        if (!c || !el) return;
+        const has = c.type === 'checkbox' ? current[k] === true : norm(current[k]) !== '';
+        const v = res.fields[k];
+        if (has && editingId && norm(current[k]) !== norm(v)) { kept++; return; }   // never overwrite what you typed on an existing home
+        if (c.type === 'checkbox') el.checked = v === true;
+        else el.value = (c.type === 'number' || c.type === 'money') ? fmtNum(v) : v;
+        el.classList.add('found');
+        filled++;
+      });
+      if (res.needInput) notes.push(esc(res.note));
+      else {
+        const from = res.source && res.source.length ? ' from ' + res.source.join(' + ') : '';
+        notes.push(filled ? `Filled ${filled} field${filled === 1 ? '' : 's'}${from} (highlighted). Everything else wasn't in the ad, so it's left blank.`
+                          : esc(res.note || 'No details found.'));
+        if (kept) notes.push(`${kept} field${kept === 1 ? '' : 's'} you'd already filled were kept as they are.`);
+        if (res.note && filled) notes.push(esc(res.note));
+      }
+      showNote(notes.join('<br>'), res.needInput || !filled || !!res.duplicate);
+      const od = $('#openDup');
+      if (od) od.onclick = () => { $('#homeDlg').close(); openHome(res.duplicate.id); };
+      if (res.needInput) $('#pasteText').focus();
+    })
+    .catch(err => showNote(esc(err.message), true))
+    .finally(() => { btn.disabled = false; btn.textContent = '✨ Analyze'; });
+}
+
+function submitHome(ev) {
+  ev.preventDefault();
+  const vals = readForm();
+  if (!editingId) {
+    const any = S.columns.some(c => c.key !== 'status' && norm(vals[c.key]) !== '');
+    if (!any) { showNote('Fill in at least one detail, or Cancel.', true); return; }
+    D.adds.push(Object.assign({ _tmp: 'tmp' + (tmpSeq++), _at: Date.now() }, vals));
+    toast('Added. Press 💾 Save to keep it.');
+  } else {
+    Object.keys(vals).forEach(k => setField(editingId, k, vals[k]));
+  }
+  $('#homeDlg').close();
+  renderBody();
+}
+
+// ---------------------------------------------------------------------------
+// Save (with conflicts)
+// ---------------------------------------------------------------------------
+let saving = false;
+function save() {
+  if (saving) return;
+  if (!dirtyCount()) { toast('Nothing to save.'); return; }
+  saving = true;
+  $('#save').disabled = true;
+  const edits = Object.keys(D.edits).map(id => ({ id: id, fields: D.edits[id] }));
+  const deletes = Object.keys(D.deletes).map(id => ({ id: id, updated_at: D.deletes[id] }));
+  const adds = D.adds.map(a => Object.assign({}, a));
+  call('saveHomes', { adds: adds, edits: edits, deletes: deletes })
+    .then(res => {
+      S.homes = res.homes;
+      D.edits = {}; D.adds = []; D.deletes = {};
+      const real = (res.conflicts || []).filter(c => !c.deleted);
+      const gone = (res.conflicts || []).filter(c => c.deleted).length;
+      renderBody();
+      if (gone) toast(`${gone} home${gone === 1 ? ' was' : 's were'} deleted meanwhile, so those edits were dropped.`);
+      if (real.length) showConflicts(real);
+      else if (!gone) toast('Saved ✓');
+    })
+    .catch(err => { msg(err.message, true); toast('Not saved: ' + err.message); })
+    .finally(() => { saving = false; $('#save').disabled = false; });
+}
+
+function showConflicts(list) {
+  const box = $('#conflictBody');
+  box.innerHTML = `<h2>Someone else changed the same thing</h2>
+    <p class="hint">These were changed in the sheet after you loaded the page. Everything else was saved. Pick which value to keep:</p>
+    ${list.map((c, i) => {
+      const h = S.homes.find(x => x.id === c.id) || {};
+      const k = col(c.key) || { label: c.key };
+      const show = v => esc(v === true ? 'yes' : v === false ? 'no' : (v === '' ? '(blank)' : v));
+      return `<div class="hint" dir="auto">${esc([h.street, h.city].filter(Boolean).join(', ') || 'Home')}</div>
+      <div class="conflict"><div class="k">${esc(k.label)}</div>
+        <label class="mine"><input type="radio" name="c${i}" value="mine" checked><span dir="auto">Mine: ${show(c.mine)}</span></label>
+        <label class="theirs"><input type="radio" name="c${i}" value="theirs"><span dir="auto">${esc(c.by || 'Theirs')}: ${show(c.theirs)}</span></label></div>`;
+    }).join('')}
+    <div class="buttons"><button class="primary" id="resolve">Save my choices</button></div>`;
+  const dlg = $('#conflictDlg');
+  $('#resolve').onclick = () => {
+    list.forEach((c, i) => {
+      const pick = box.querySelector(`input[name="c${i}"]:checked`).value;
+      if (pick === 'mine') {
+        const e = D.edits[c.id] || (D.edits[c.id] = {});
+        e[c.key] = { from: c.theirs, to: c.mine };
+      }
+    });
+    dlg.close();
+    renderBody();
+    if (dirtyCount()) save();
+  };
+  dlg.showModal();
+}
+
+// ---------------------------------------------------------------------------
+// Chat and call log
+// ---------------------------------------------------------------------------
+let chatId = null, chatTab = 'chat', chatData = { messages: [], calls: [] }, chatTimer = null;
+
+function openChat(id) {
+  chatId = id;
+  chatData = { messages: [], calls: [] };
+  $('#chat').hidden = false;
+  drawChatHead();
+  setChatTab('chat');
+  S.unread[id] = 0;
+  renderBody();
+  loadChat(true);
+  clearInterval(chatTimer);
+  chatTimer = setInterval(() => { if (!document.hidden) loadChat(false); }, 15000);
+}
+
+function closeChat() {
+  $('#chat').hidden = true;
+  chatId = null;
+  clearInterval(chatTimer);
+}
+
+function drawChatHead() {
+  const r = homeById(chatId) || {};
+  const bits = [r.price !== '' && r.price !== undefined ? '₪' + fmtNum(r.price) : '', r.rooms ? fmtNum(r.rooms) + ' rooms' : '', r.status].filter(Boolean);
+  $('#chatTitle').innerHTML = `<b dir="auto">${esc([r.street, r.city].filter(Boolean).join(', ') || 'Home')}</b>${mapLinks(r)}<div class="hint">${esc(bits.join(' · '))} ${linkCell(r.link)}</div>`;
+}
+
+function setChatTab(t) {
+  chatTab = t;
+  $('#tabChat').setAttribute('aria-selected', t === 'chat');
+  $('#tabCalls').setAttribute('aria-selected', t === 'calls');
+  $('#chatFoot').hidden = t !== 'chat';
+  drawChat();
+}
+
+function loadChat(markRead) {
+  const id = chatId;
+  call('getChat', id).then(d => {
+    if (id !== chatId) return;
+    const before = chatData.messages.length;
+    chatData = d;
+    if (chatTab === 'chat' || before === 0) drawChat();
+    if (markRead || d.messages.length !== before) call('markRead', id).catch(() => {});
+  }).catch(err => msg(err.message, true));
+}
+
+function drawChat() {
+  const body = $('#chatBody');
+  if (chatTab === 'chat') {
+    let lastDay = '';
+    const html = chatData.messages.map(m => {
+      const d = new Date(m.time);
+      const day = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      const sep = day !== lastDay ? `<div class="day">${esc(day)}</div>` : '';
+      lastDay = day;
+      const mine = m.author === S.me;
+      return sep + `<div class="msg${mine ? ' me' : ''}" dir="auto"><div class="by">${mine ? '' : esc(m.author) + ' · '}${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>${esc(m.text)}</div>`;
+    }).join('');
+    body.innerHTML = html || '<div class="empty">No messages yet. Start the conversation about this home.</div>';
+    body.scrollTop = body.scrollHeight;
+  } else {
+    const r = homeById(chatId) || {};
+    const hasNext = col('next_step'), hasVisit = col('visit_date');
+    body.innerHTML = `
+      ${hasNext || hasVisit ? `<div class="section-title">Next step</div>
+      <div class="next-step">
+        ${hasNext ? `<label>What's next<input id="ns" dir="auto" value="${esc(r.next_step || '')}" placeholder="e.g. Call back Sunday"></label>` : ''}
+        ${hasVisit ? `<label>Visit date<input id="vd" type="date" value="${esc(r.visit_date || '')}"></label>` : ''}
+      </div><div class="hint">These go in the table. Press 💾 Save to keep them.</div>` : ''}
+      <div class="section-title">Call log</div>
+      ${chatData.calls.map(c => `<div class="call"><div class="by"><span>${esc(fmtDate(c.date))} · ${esc(c.author)}</span>
+        <button class="icon" data-call="${esc(c.id)}" title="Delete this entry">🗑️</button></div><div dir="auto" style="white-space:pre-wrap">${esc(c.note)}</div></div>`).join('') || '<div class="hint">No calls logged yet.</div>'}
+      <div class="call-form"><input type="date" id="callDate" value="${today()}"><span></span>
+        <textarea id="callNote" rows="2" dir="auto" placeholder="What did the seller say?"></textarea></div>
+      <div><button class="primary" id="addCall">+ Add call</button></div>`;
+    const ns = $('#ns'), vd = $('#vd');
+    if (ns) ns.onchange = () => { setField(chatId, 'next_step', ns.value.trim()); renderBody(); };
+    if (vd) vd.onchange = () => { setField(chatId, 'visit_date', vd.value); renderBody(); };
+    $('#addCall').onclick = () => {
+      const note = $('#callNote').value.trim();
+      if (!note) { $('#callNote').focus(); return; }
+      $('#addCall').disabled = true;
+      call('addCall', chatId, $('#callDate').value, note).then(d => {
+        chatData = d; S.calls[chatId] = d.calls.length; drawChat();
+      }).catch(err => toast(err.message)).finally(() => { const b = $('#addCall'); if (b) b.disabled = false; });
+    };
+    body.querySelectorAll('[data-call]').forEach(b => b.onclick = () => {
+      if (!confirm('Delete this call entry?')) return;
+      call('deleteCall', chatId, b.dataset.call).then(d => { chatData = d; drawChat(); }).catch(err => toast(err.message));
+    });
+  }
+}
+
+function sendChat() {
+  const input = $('#chatInput');
+  const text = input.value.trim();
+  if (!text || !chatId) return;
+  $('#chatSend').disabled = true;
+  call('sendChat', chatId, text).then(d => {
+    chatData = d; input.value = ''; input.style.height = ''; drawChat();
+  }).catch(err => toast(err.message)).finally(() => { $('#chatSend').disabled = false; input.focus(); });
+}
+
+$('#chatClose').onclick = closeChat;
+$('#tabChat').onclick = () => setChatTab('chat');
+$('#tabCalls').onclick = () => setChatTab('calls');
+$('#chatSend').onclick = sendChat;
+$('#chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); }
+});
+$('#chatInput').addEventListener('input', e => { const t = e.target; t.style.height = ''; t.style.height = Math.min(140, t.scrollHeight) + 'px'; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#chat').hidden && !document.querySelector('dialog[open]')) closeChat(); });
+
+// ---------------------------------------------------------------------------
+// Top bar, loading, refresh
+// ---------------------------------------------------------------------------
+let toastTimer = null;
+function toast(t) {
+  const el = $('#toast');
+  el.textContent = t; el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 3500);
+}
+function msg(t, err) { $('#msg').innerHTML = t ? `<span class="${err ? 'err' : ''}">${esc(t)}</span>` : ''; }
+
+function load(first) {
+  return call('getState').then(s => {
+    const colsChanged = JSON.stringify(s.columns) !== JSON.stringify(S.columns);
+    S = s;
+    $('#who').textContent = s.me ? '· ' + s.me : '';
+    msg('');
+    if (first || colsChanged || builtFor !== (phoneMQ.matches ? 'cards' : 'table')) build();
+    else renderBody();
+    if (chatId) drawChatHead();
+  }).catch(err => {
+    if (first) $('#main').innerHTML = `<div class="center">Couldn't load: ${esc(err.message)}</div>`;
+    else msg('Offline? ' + err.message, true);
+  });
+}
+
+$('#addBtn').onclick = () => openHome(null);
+$('#save').onclick = save;
+$('#reload').onclick = () => {
+  if (dirtyCount() && !confirm('Reload the latest from the sheet? Your unsaved changes stay on top of it.')) return;
+  load(false).then(() => toast('Up to date.'));
+};
+$('#search').oninput = e => { searchQ = e.target.value.trim(); renderBody(); };
+$('#filtersBtn').onclick = () => { $('#filterPanel').hidden = !$('#filterPanel').hidden; };
+$('#clearFilters').onclick = () => { F = {}; searchQ = ''; $('#search').value = ''; saveFilters(); build(); };
+phoneMQ.addEventListener('change', () => { if (S.columns.length) build(); });
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
+});
+window.addEventListener('beforeunload', e => { if (dirtyCount()) { e.preventDefault(); e.returnValue = ''; } });
+// Pick up the other person's changes and new chat messages.
+setInterval(() => { if (!document.hidden && !saving && !document.querySelector('dialog[open]')) load(false); }, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.columns.length) load(false); });
+
+// ---------------------------------------------------------------------------
+// Mock server for trying the page without Google (?mock=1). Data lives in memory.
+// ---------------------------------------------------------------------------
+const Mock = {
+  me: 'Roy', seq: 10,
+  columns: [
+    { key: 'liked', label: 'Liked it', type: 'checkbox', icon: '❤️', analyzed: false },
+    { key: 'link', label: 'Link', type: 'link', analyzed: false },
+    { key: 'city', label: 'City', type: 'text', analyzed: true },
+    { key: 'street', label: 'Street', type: 'text', analyzed: true },
+    { key: 'plot_m2', label: 'Plot m²', type: 'number', analyzed: true },
+    { key: 'built_m2', label: 'Built m²', type: 'number', analyzed: true },
+    { key: 'rooms', label: 'Rooms', type: 'number', analyzed: true },
+    { key: 'basement', label: 'Basement', type: 'checkbox', analyzed: true },
+    { key: 'description', label: 'Description', type: 'longtext', analyzed: true },
+    { key: 'price', label: 'Price ₪', type: 'money', analyzed: true },
+    { key: 'seller_name', label: 'Seller', type: 'text', analyzed: true },
+    { key: 'seller_phone', label: 'Phone', type: 'phone', analyzed: true },
+    { key: 'status', label: 'Status', type: 'select', options: STATUSES, analyzed: false },
+    { key: 'next_step', label: 'Next step', type: 'text', analyzed: false },
+    { key: 'visit_date', label: 'Visit', type: 'date', analyzed: false },
+  ],
+  homes: [
+    { id: 'h1', link: 'https://www.yad2.co.il/realestate/item/abc123', city: 'כרמיאל', street: 'שדרות נשיאי ישראל 12', plot_m2: 500, built_m2: 180, rooms: 6, basement: true,
+      description: 'בית פרטי משופץ, גינה גדולה, מרתף מואר. קרוב לבתי ספר.', price: 2650000, seller_name: 'דני', seller_phone: '054-1234567', status: 'Not seen', next_step: 'Call back Sunday', visit_date: '' },
+    { id: 'h2', liked: true, link: 'https://www.facebook.com/groups/123/posts/456', city: 'משגב', street: '', plot_m2: 750, built_m2: 210, rooms: 7, basement: false,
+      description: 'Private house with a view, needs some renovation.', price: 3100000, seller_name: 'מיכל', seller_phone: '052-7654321', status: 'Seen', next_step: '', visit_date: '2026-11-10' },
+    { id: 'h3', link: 'https://www.yad2.co.il/realestate/item/zzz999', city: 'כרמיאל', street: 'הגפן 3', plot_m2: '', built_m2: 140, rooms: 5, basement: false,
+      description: 'דו-משפחתי, חניה כפולה.', price: 1990000, seller_name: '', seller_phone: '', status: 'Not relevant', next_step: '', visit_date: '' },
+  ],
+  chats: [{ id: 'm1', home_id: 'h1', author: 'Wife', time: Date.now() - 3600000, text: 'מה דעתך? נראה טוב, המרתף יכול להיות משרד' }],
+  calls: [{ id: 'c1', home_id: 'h2', author: 'Roy', date: '2026-11-04', note: 'Seller says price is negotiable.', time: Date.now() - 86400000 }],
+  call(fn, args) {
+    const M = Mock, now = Date.now();
+    const out = (() => {
+      switch (fn) {
+        case 'getState': return M.state();
+        case 'saveHomes': {
+          const ch = args[0], conflicts = [];
+          (ch.adds || []).forEach(a => { const h = Object.assign({}, a, { id: 'h' + (M.seq++), created_by: M.me, created_at: now }); delete h._tmp; delete h._at; M.homes.push(h); });
+          (ch.edits || []).forEach(e => {
+            const h = M.homes.find(x => x.id === e.id);
+            if (!h) { conflicts.push({ id: e.id, deleted: true }); return; }
+            Object.keys(e.fields).forEach(k => {
+              const f = e.fields[k];
+              if (norm(h[k]) === norm(f.to)) return;
+              if (norm(h[k]) !== norm(f.from)) { conflicts.push({ id: e.id, key: k, mine: f.to, theirs: h[k], by: 'Wife' }); return; }
+              h[k] = f.to; h.updated_by = M.me; h.updated_at = now;
+            });
+          });
+          const del = (ch.deletes || []).map(d => d.id);
+          M.homes = M.homes.filter(h => del.indexOf(h.id) < 0);
+          return { homes: M.state().homes, conflicts: conflicts };
+        }
+        case 'analyze': {
+          const [link, text, imgs] = args;
+          if (/facebook/.test(link) && !text && !(imgs || []).length) return { fields: {}, found: [], source: [], needInput: true, note: 'Facebook doesn\'t let apps read posts. Paste the post text or a screenshot, then Analyze again.' };
+          const dup = M.homes.find(h => h.link === link);
+          return { fields: { city: 'קריית טבעון', rooms: 5.5, price: 2800000, basement: true, description: 'בית בודד עם גינה ומרתף (mock).' },
+                   found: ['city', 'rooms', 'price', 'basement', 'description'], source: ['the ad page'], duplicate: dup ? { id: dup.id, city: dup.city, street: dup.street } : null, needInput: false, note: '' };
+        }
+        case 'getChat': return M.view(args[0]);
+        case 'sendChat': M.chats.push({ id: 'm' + (M.seq++), home_id: args[0], author: M.me, time: now, text: args[1] }); return M.view(args[0]);
+        case 'addCall': M.calls.push({ id: 'c' + (M.seq++), home_id: args[0], author: M.me, date: args[1], note: args[2], time: now }); return M.view(args[0]);
+        case 'deleteCall': M.calls = M.calls.filter(c => c.id !== args[1]); return M.view(args[0]);
+        case 'markRead': M.read = M.read || {}; M.read[args[0]] = now; return true;
+      }
+      throw new Error('Unknown action.');
+    })();
+    return new Promise(res => setTimeout(() => res(JSON.parse(JSON.stringify(out))), fn === 'analyze' ? 600 : 120));
+  },
+  state() {
+    const M = Mock, unread = {};
+    M.chats.forEach(m => { if (m.author !== M.me && !(M.read && M.read[m.home_id] >= m.time)) unread[m.home_id] = (unread[m.home_id] || 0) + 1; });
+    return { me: M.me, users: ['Roy', 'Wife'], columns: M.columns, unread: unread, calls: {}, analyzeReady: true,
+             homes: M.homes.map(h => Object.assign({ created_by: 'Roy', created_at: 1762000000000, updated_by: 'Roy', updated_at: 1762000000000 }, h)) };
+  },
+  view(id) {
+    return { me: Mock.me, messages: Mock.chats.filter(m => m.home_id === id), calls: Mock.calls.filter(c => c.home_id === id) };
+  },
+  // For testing: Mock.otherEdits('h1', 'price', 2500000) acts like the other person saving a change.
+  otherEdits(id, key, value) { const h = Mock.homes.find(x => x.id === id); h[key] = value; h.updated_by = 'Wife'; },
+};
+window.Mock = Mock;
+
+// ---------------------------------------------------------------------------
+// Start
+// ---------------------------------------------------------------------------
+(function start() {
+  const fromLink = (location.hash.match(/[#&]u=([A-Za-z0-9]+)/) || [])[1];
+  let saved = '';
+  try { saved = localStorage.getItem('ourNextHomeToken') || ''; } catch (e) {}
+  TOKEN = fromLink || saved;
+  if (fromLink) { try { localStorage.setItem('ourNextHomeToken', fromLink); } catch (e) {} }
+  if (!MOCK && !window.OUR_NEXT_HOME_API) { $('#main').innerHTML = '<div class="center">The app isn\'t set up yet: put the Apps Script /exec URL in config.js.</div>'; return; }
+  if (!MOCK && !TOKEN) { $('#main').innerHTML = '<div class="center">This page needs your personal link (it ends in #u=…).</div>'; return; }
+  load(true);
+})();
+</script>
+</body>
+</html>
