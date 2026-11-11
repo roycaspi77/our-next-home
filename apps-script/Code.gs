@@ -41,6 +41,7 @@ const COLUMNS = [
   { key: 'built_m2', label: 'Built m²', type: 'number', min: 10, max: 5000, ai: 'Built area of the house in square meters (שטח בנוי)' },
   { key: 'rooms', label: 'Rooms', type: 'number', min: 0.5, max: 30, ai: 'Number of rooms (חדרים), may be a half like 5.5' },
   { key: 'basement', label: 'Basement', type: 'checkbox', ai: 'true only if the ad says there is a basement (מרתף); false only if it says there is none' },
+  { key: 'attic', label: 'Attic', type: 'checkbox', ai: 'true only if the ad says there is an attic (עליית גג); false only if it says there is none' },
   { key: 'description', label: 'Description', type: 'longtext', ai: 'A short summary of the ad (up to 3 sentences) in the language of the ad, only facts it states' },
   { key: 'price', label: 'Price ₪', type: 'money', min: 10000, max: 1000000000, ai: 'Asking price in shekels as a full number (2.5 מיליון = 2500000)' },
   { key: 'seller_name', label: 'Seller', type: 'text', ai: 'Name of the seller or contact person, as written' },
@@ -331,24 +332,53 @@ function askGemini_(pageText, text, images) {
   const props = PropertiesService.getScriptProperties();
   const key = props.getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('Analyze isn\'t set up: add GEMINI_API_KEY in Apps Script > Project Settings > Script Properties.');
-  const model = props.getProperty('GEMINI_MODEL') || DEFAULT_MODEL;
+  // GEMINI_MODEL is an optional manual choice. Otherwise use the models picked last
+  // time, or ask Google which models this key can use. A "not found" (retired model)
+  // makes the script look again; a busy model (503) is retried once, then the next
+  // model in the list is tried.
+  const manual = props.getProperty('GEMINI_MODEL');
+  let list = savedModels_() || discoverModels_(key);
 
   const parts = [{ text: analyzePrompt() }];
   if (pageText) parts.push({ text: 'AD PAGE CONTENT:\n' + pageText });
   if (text) parts.push({ text: 'PASTED POST TEXT:\n' + text });
   images.forEach(im => parts.push({ inline_data: { mime_type: im.mime, data: im.data } }));
-
-  const resp = UrlFetchApp.fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+  const payload = JSON.stringify({
+    contents: [{ role: 'user', parts: parts }],
+    generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: analyzeSchema() },
+  });
+  const send = m => UrlFetchApp.fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(m)}:generateContent`, {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-      headers: { 'x-goog-api-key': key },
-      payload: JSON.stringify({
-        contents: [{ role: 'user', parts: parts }],
-        generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: analyzeSchema() },
-      }),
+      headers: { 'x-goog-api-key': key }, payload: payload,
     });
-  const code = resp.getResponseCode();
-  if (code === 404) throw new Error(`Gemini model "${model}" wasn't found. Set GEMINI_MODEL in Script Properties to a current model name.`);
+
+  const queue = (manual ? [manual] : []).concat(list.filter(m => m !== manual));
+  const tried = {};
+  let resp = null, code = 0, rediscovered = false, sends = 0;
+  while (queue.length && sends < 5) {
+    const model = queue.shift();
+    if (tried[model]) continue;
+    tried[model] = true;
+    resp = send(model); sends++;
+    code = resp.getResponseCode();
+    if ((code === 503 || code === 500) && sends < 5) {   // busy: one short wait, same model
+      Utilities.sleep(2000);
+      resp = send(model); sends++;
+      code = resp.getResponseCode();
+    }
+    if (code === 200) break;
+    if (code === 404 && !rediscovered) {                  // retired: refresh the list
+      rediscovered = true;
+      list = discoverModels_(key);
+      list.forEach(m => { if (!tried[m]) queue.push(m); });
+      continue;
+    }
+    if (code === 400 || code === 401 || code === 403) break;   // a key problem won't change with another model
+  }
+  if (code === 400 && /API key not valid/i.test(resp.getContentText())) throw new Error('The GEMINI_API_KEY in Script Properties isn\'t valid. Create a new key at aistudio.google.com/apikey.');
+  if (code === 404) throw new Error('No Gemini model was found for this key. Run checkGemini in Apps Script.');
+  if (code === 503 || code === 500) throw new Error('Gemini is very busy right now. Try Analyze again in a minute.');
   if (code === 429) throw new Error('Gemini\'s free quota is used up for now. Try again in a minute.');
   if (code !== 200) throw new Error('Gemini error ' + code + ': ' + resp.getContentText().slice(0, 200));
   const body = JSON.parse(resp.getContentText());
@@ -358,7 +388,62 @@ function askGemini_(pageText, text, images) {
   try { return JSON.parse(out.text); } catch (err) { return {}; }
 }
 
+/** Asks Google which models this key can use, ranks them with rankModels() and remembers the best few. */
+function discoverModels_(key) {
+  const resp = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', {
+    muteHttpExceptions: true, headers: { 'x-goog-api-key': key },
+  });
+  if (resp.getResponseCode() === 400 || resp.getResponseCode() === 403) {
+    throw new Error('The GEMINI_API_KEY in Script Properties isn\'t valid. Create a new key at aistudio.google.com/apikey.');
+  }
+  if (resp.getResponseCode() !== 200) return [DEFAULT_MODEL];
+  const list = rankModels(JSON.parse(resp.getContentText()).models || []).slice(0, 4);
+  if (!list.length) throw new Error('No Gemini model is available for this API key.');
+  PropertiesService.getScriptProperties().setProperty('GEMINI_MODELS_AUTO', JSON.stringify(list));
+  return list;
+}
+
+function savedModels_() {
+  try {
+    const list = JSON.parse(PropertiesService.getScriptProperties().getProperty('GEMINI_MODELS_AUTO') || 'null');
+    return Array.isArray(list) && list.length ? list : null;
+  } catch (err) { return null; }
+}
+
+/** Testing aid: run from the editor to see which models Analyze will use, in order. */
+function checkGemini() {
+  const props = PropertiesService.getScriptProperties();
+  props.deleteProperty('GEMINI_MODEL_AUTO');   // from an earlier version
+  const list = discoverModels_(props.getProperty('GEMINI_API_KEY'));
+  const manual = props.getProperty('GEMINI_MODEL');
+  Logger.log('Analyze will use: ' + (manual ? manual + ' (GEMINI_MODEL), then ' : '') + list.join(', then '));
+}
+
 // ---- Pure helpers (no Apps Script services; tested in Node by .dev/test_helpers.js) ----
+
+/**
+ * Orders Google's model list for Analyze: the "latest Flash" alias, then stable
+ * Flash (newest first), then Flash previews, then Flash-Lite, then any other
+ * Gemini text model. Never a speech/image/embedding model.
+ */
+function rankModels(models) {
+  const names = (models || [])
+    .filter(m => (m.supportedGenerationMethods || []).indexOf('generateContent') >= 0)
+    .map(m => String(m.name || '').replace(/^models\//, ''))
+    .filter(n => /^gemini-/.test(n) && !/(embed|tts|image|audio|live|thinking|robotics|computer|native|aqa|vision)/i.test(n));
+  const version = n => { const m = n.match(/^gemini-(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; };
+  const tier = n => {
+    if (n === 'gemini-flash-latest') return 0;
+    if (/^gemini-[\d.]+-flash(-\d{3})?$/.test(n)) return 1;
+    if (/flash/.test(n) && !/lite/.test(n) && !/exp/.test(n)) return 2;
+    if (/flash-lite/.test(n) && !/exp/.test(n)) return 3;
+    return 4;
+  };
+  return names.sort((a, b) => tier(a) - tier(b) || version(b) - version(a) || a.length - b.length)
+    .filter((n, i, all) => all.indexOf(n) === i);
+}
+
+function pickModel(models) { return rankModels(models)[0] || null; }
 
 function analyzeColumns() { return COLUMNS.filter(c => c.ai); }
 
@@ -697,6 +782,6 @@ function newToken_() { return Utilities.getUuid().replace(/-/g, ''); }
 
 // Lets .dev/test_helpers.js load the pure helpers in Node.
 if (typeof module !== 'undefined') {
-  module.exports = { COLUMNS, normalizeLink, israeliPhone, cleanAnalysis, adText, facebookText, adToken,
+  module.exports = { COLUMNS, askGemini_, pickModel, rankModels, normalizeLink, israeliPhone, cleanAnalysis, adText, facebookText, adToken,
                      findAdObject, flatten, analyzeSchema, analyzePrompt, squash, hostOf };
 }
