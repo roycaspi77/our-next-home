@@ -123,6 +123,12 @@ td.c-liked { text-align: center; }
 #filterPanel[hidden] { display: none; }
 #filterPanel label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
 #filterPanel input, #filterPanel select { color: var(--text); }
+@media (min-width: 761px) {
+  #filterPanel:not([hidden]) { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; }
+  #filterPanel label { min-width: 120px; }
+  #filterPanel input[type=search] { width: 150px; }
+  #filterPanel .range input { width: 90px; }
+}
 
 /* Dialogs */
 dialog { border: 1px solid var(--line); border-radius: 12px; padding: 0; width: min(760px, 94vw); max-height: 92vh; background: var(--panel); color: var(--text); box-shadow: 0 12px 40px rgba(0,0,0,.3); }
@@ -200,7 +206,7 @@ dialog::backdrop { background: rgba(15, 23, 42, .4); }
   <span class="spacer"></span>
   <input id="search" type="search" placeholder="Search everything…" dir="auto">
   <div class="actions">
-    <button id="filtersBtn" hidden>⚲ Filters</button>
+    <button id="filtersBtn">⚲ Filters</button>
     <button id="addBtn" class="primary">+ Add home</button>
     <button id="save" title="Save your changes to the sheet">💾 Save</button>
     <button id="reload" title="Load the latest from the sheet">⟳</button>
@@ -274,12 +280,10 @@ let F = store.get('onh.filters', {});             // filters[key] = {q} | {min,m
 let SORT = store.get('onh.sort', null);           // {key, dir}
 let searchQ = '';
 
-const COMPUTED = { key: 'ppm', label: '₪/m²', type: 'number', computed: true };
-function viewColumns() {
-  const out = [];
-  S.columns.forEach(c => { out.push(c); if (c.key === 'price') out.push(COMPUTED); });
-  return out;
-}
+// Only these columns get a filter (Roy's request)
+const FILTERABLE = ['liked', 'status', 'price', 'city', 'seller_name'];
+const canFilter = c => FILTERABLE.indexOf(c.key) >= 0;
+function viewColumns() { return S.columns; }
 const col = key => S.columns.find(c => c.key === key);
 
 function dirtyCount() {
@@ -296,10 +300,6 @@ function rowsAll() {
     return r;
   });
   D.adds.forEach(a => list.push(Object.assign({}, a, { id: a._tmp, _new: true, _dirty: [], created_at: a._at })));
-  list.forEach(r => {
-    const p = Number(r.price), b = Number(r.built_m2);
-    r.ppm = p > 0 && b > 0 ? Math.round(p / b) : '';
-  });
   return list;
 }
 
@@ -332,7 +332,7 @@ function passes(r) {
   }
   return viewColumns().every(c => {
     const f = F[c.key];
-    if (!f || c.computed) return true;
+    if (!f || !canFilter(c)) return true;
     const v = r[c.key];
     if (isNumeric(c)) {
       const n = Number(v);
@@ -351,7 +351,7 @@ function passes(r) {
 function activeFilters() {
   return Object.keys(F).filter(k => {
     const f = F[k];
-    if (k === COMPUTED.key) return false;
+    if (FILTERABLE.indexOf(k) < 0) return false;
     return f && (f.q || f.v || (f.set && f.set.length) || (f.min !== undefined && f.min !== '') || (f.max !== undefined && f.max !== ''));
   }).length + (searchQ ? 1 : 0);
 }
@@ -376,7 +376,7 @@ function saveFilters() { store.set('onh.filters', F); store.set('onh.sort', SORT
 function filterControl(c) {
   const f = F[c.key] || {};
   const wrap = document.createElement('div');
-  if (c.computed) return wrap;   // no filter on ₪/m²
+  if (!canFilter(c)) return wrap;
   const upd = (patch) => { F[c.key] = Object.assign({}, F[c.key] || {}, patch); saveFilters(); renderBody(); };
   if (isNumeric(c)) {
     wrap.className = 'range';
@@ -435,12 +435,12 @@ let builtFor = '';
 
 function build() {
   const mode = phoneMQ.matches ? 'cards' : 'table';
-  $('#filtersBtn').hidden = mode !== 'cards';
+  const p = $('#filterPanel');
+  p.innerHTML = '';
   if (mode === 'table') {
-    $('#filterPanel').hidden = true;
     const cols = viewColumns();
-    $('#main').innerHTML = '<div class="table-wrap"><table><thead><tr class="labels"></tr><tr class="filters"></tr></thead><tbody></tbody></table></div>';
-    const labels = $('thead tr.labels'), filters = $('thead tr.filters');
+    $('#main').innerHTML = '<div class="table-wrap"><table><thead><tr class="labels"></tr></thead><tbody></tbody></table></div>';
+    const labels = $('thead tr.labels');
     cols.forEach(c => {
       const th = document.createElement('th');
       th.innerHTML = esc(c.icon || c.label) + ' <span class="arrow"></span>';
@@ -453,17 +453,10 @@ function build() {
         saveFilters(); renderBody();
       };
       labels.appendChild(th);
-      const fth = document.createElement('th');
-      fth.className = 'c-' + c.key;
-      fth.appendChild(filterControl(c));
-      filters.appendChild(fth);
     });
     const th = document.createElement('th'); th.className = 'c-actions'; th.textContent = 'Chat'; labels.appendChild(th);
-    const fth = document.createElement('th'); fth.className = 'c-actions'; filters.appendChild(fth);
   } else {
     $('#main').innerHTML = '<div class="cards" id="cards"></div>';
-    const p = $('#filterPanel');
-    p.innerHTML = '';
     const sortL = document.createElement('label');
     sortL.className = '';
     sortL.innerHTML = 'Sort by<select id="sortSel"><option value="">Newest first</option>' +
@@ -472,13 +465,14 @@ function build() {
     const sel = sortL.querySelector('select');
     sel.value = SORT ? SORT.key + ':' + SORT.dir : '';
     sel.onchange = () => { const [k, d] = sel.value.split(':'); SORT = k ? { key: k, dir: d } : null; saveFilters(); renderBody(); };
-    viewColumns().filter(c => !c.computed).forEach(c => {
-      const l = document.createElement('label');
-      l.textContent = c.icon ? c.icon + ' ' + c.label : c.label;
-      l.appendChild(filterControl(c));
-      p.appendChild(l);
-    });
   }
+  // The few filters live in a panel opened by the ⚲ Filters button (no filter row under the headers)
+  viewColumns().filter(canFilter).forEach(c => {
+    const l = document.createElement('label');
+    l.textContent = c.icon ? c.icon + ' ' + c.label : c.label;
+    l.appendChild(filterControl(c));
+    p.appendChild(l);
+  });
   builtFor = mode;
   renderBody();
 }
@@ -512,7 +506,7 @@ function cellHtml(c, r) {
   switch (c.type) {
     case 'link': return linkCell(v);
     case 'money': return v === '' ? '' : '₪' + fmtNum(v);
-    case 'number': return c.key === 'ppm' && v !== '' ? '₪' + fmtNum(v) : fmtNum(v);
+    case 'number': return fmtNum(v);
     case 'checkbox': if (c.icon) return `<button class="icon heart" data-heart="${c.key}" ${r._deleted ? 'disabled' : ''} title="${esc(c.label)}" aria-pressed="${!!v}">${v ? esc(c.icon) : '🤍'}</button>`;
       return `<input type="checkbox" data-k="${c.key}" ${v ? 'checked' : ''} ${r._deleted ? 'disabled' : ''} aria-label="${esc(c.label)}">`;
     case 'select': return `<select data-k="${c.key}" ${r._deleted ? 'disabled' : ''}>${c.options.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
@@ -574,10 +568,10 @@ function renderBody() {
       if (r.rooms !== '') facts.push(fmtNum(r.rooms) + ' rooms');
       if (r.built_m2 !== '') facts.push(fmtNum(r.built_m2) + ' m² built');
       if (r.plot_m2 !== '') facts.push(fmtNum(r.plot_m2) + ' m² plot');
-      if (r.ppm !== '') facts.push('₪' + fmtNum(r.ppm) + '/m²');
       if (r.basement) facts.push('Basement');
+      if (r.attic) facts.push('Attic');
       const hc = S.columns.find(c => c.type === 'checkbox' && c.icon);
-      const extra = S.columns.filter(c => !c.icon && ['link', 'city', 'street', 'plot_m2', 'built_m2', 'rooms', 'basement', 'description', 'price', 'seller_name', 'seller_phone', 'status'].indexOf(c.key) < 0 && norm(r[c.key]) !== '')
+      const extra = S.columns.filter(c => !c.icon && ['link', 'city', 'street', 'plot_m2', 'built_m2', 'rooms', 'basement', 'attic', 'description', 'price', 'seller_name', 'seller_phone', 'status'].indexOf(c.key) < 0 && norm(r[c.key]) !== '')
         .map(c => `<div class="card-desc"><b>${esc(c.label)}:</b> <span dir="auto">${esc(c.type === 'date' ? fmtDate(r[c.key]) : r[c.key])}</span></div>`).join('');
       return `<div class="card ${statusClass(r)}${r._deleted ? ' deleted' : ''}" data-id="${esc(r.id)}">
         <div class="card-top">${hc ? cellHtml(hc, r) : ''}<div class="card-title" style="flex:1" dir="auto">${esc([r.street, r.city].filter(Boolean).join(', ') || 'No address yet')}${mapLinks(r)}</div>
@@ -1044,6 +1038,7 @@ const Mock = {
     { key: 'built_m2', label: 'Built m²', type: 'number', analyzed: true },
     { key: 'rooms', label: 'Rooms', type: 'number', analyzed: true },
     { key: 'basement', label: 'Basement', type: 'checkbox', analyzed: true },
+    { key: 'attic', label: 'Attic', type: 'checkbox', analyzed: true },
     { key: 'description', label: 'Description', type: 'longtext', analyzed: true },
     { key: 'price', label: 'Price ₪', type: 'money', analyzed: true },
     { key: 'seller_name', label: 'Seller', type: 'text', analyzed: true },
