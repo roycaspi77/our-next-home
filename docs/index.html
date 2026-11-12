@@ -103,7 +103,9 @@ td.c-liked { text-align: center; }
 .pop { position: relative; }
 .pop-list { position: absolute; z-index: 5; top: calc(100% + 3px); left: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; box-shadow: 0 6px 20px rgba(0,0,0,.18); display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
 .pop-list[hidden] { display: none; }
-.pop-list label { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+.pop-list label { display: flex; gap: 6px; align-items: center; white-space: nowrap; color: var(--text); font-size: 13px; }
+.pop-list { max-height: 300px; overflow-y: auto; }
+.pop-btn { width: 100%; min-width: 120px; font-size: 12px; padding: 2px 5px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
 
 /* Cards (phone width) */
 .cards { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
@@ -340,19 +342,33 @@ function passes(r) {
       if (f.max !== undefined && f.max !== '' && !(v !== '' && n <= Number(f.max))) return false;
       return true;
     }
-    if (c.type === 'checkbox') return !f.v || (f.v === 'yes' ? v === true : v !== true);
-    if (c.type === 'select') return !f.set || !f.set.length || f.set.indexOf(v) >= 0;
-    if (!f.q) return true;
-    if (f.q === '-') return norm(v) === '';          // "-" finds blanks
-    return String(v || '').toLowerCase().indexOf(f.q.toLowerCase()) >= 0;
+    return !f.set || !f.set.length || f.set.indexOf(optionOf(c, v)) >= 0;
   });
+}
+
+// The value a row has in a dropdown filter: 'yes'/'no' for a checkbox, the trimmed text otherwise ('' = blank)
+function optionOf(c, v) {
+  if (c.type === 'checkbox') return v === true ? 'yes' : 'no';
+  return norm(v) === '' ? '' : String(v).trim();
+}
+
+// The choices of a dropdown filter: fixed for checkbox/status, the values in the list for text columns
+function filterOptions(c) {
+  if (c.type === 'checkbox') return [{ v: 'yes', t: c.icon || 'Yes' }, { v: 'no', t: c.icon ? 'Not ' + c.icon : 'No' }];
+  if (c.type === 'select') return c.options.map(o => ({ v: o, t: o }));
+  const vals = new Set(rowsAll().map(r => optionOf(c, r[c.key])));
+  ((F[c.key] && F[c.key].set) || []).forEach(v => vals.add(v));   // keep chosen values that vanished
+  const list = Array.from(vals).filter(v => v !== '').sort((a, b) => a.localeCompare(b, 'he'));
+  const out = list.map(v => ({ v: v, t: v }));
+  if (vals.has('')) out.push({ v: '', t: '(blank)' });
+  return out;
 }
 
 function activeFilters() {
   return Object.keys(F).filter(k => {
     const f = F[k];
     if (FILTERABLE.indexOf(k) < 0) return false;
-    return f && (f.q || f.v || (f.set && f.set.length) || (f.min !== undefined && f.min !== '') || (f.max !== undefined && f.max !== ''));
+    return f && ((f.set && f.set.length) || (f.min !== undefined && f.min !== '') || (f.max !== undefined && f.max !== ''));
   }).length + (searchQ ? 1 : 0);
 }
 
@@ -386,43 +402,46 @@ function filterControl(c) {
       i.oninput = () => upd({ [k]: i.value.replace(/[,\s₪]/g, '') });
       wrap.appendChild(i);
     });
-  } else if (c.type === 'checkbox') {
-    const s = document.createElement('select');
-    s.innerHTML = c.icon ? `<option value="">any</option><option value="yes">${esc(c.icon)}</option><option value="no">not ${esc(c.icon)}</option>`
-                         : '<option value="">any</option><option value="yes">yes</option><option value="no">no</option>';
-    s.value = f.v || '';
-    s.onchange = () => upd({ v: s.value });
-    wrap.appendChild(s);
-  } else if (c.type === 'select') {
+  } else {
+    // A dropdown list of checkboxes; nothing ticked = no filter
     wrap.className = 'pop';
     const b = document.createElement('button');
-    const label = () => { const n = (F[c.key] && F[c.key].set || []).length; b.textContent = n ? n + ' chosen ▾' : 'all ▾'; };
-    b.type = 'button'; b.style.width = '100%'; b.style.fontSize = '12px'; b.style.padding = '2px 5px';
+    const chosen = () => (F[c.key] && F[c.key].set) || [];
+    const label = () => {
+      const s = chosen();
+      const name = v => (filterOptions(c).find(o => o.v === v) || { t: v }).t;
+      b.textContent = (!s.length ? 'all' : s.length === 1 ? name(s[0]) : s.length + ' chosen') + ' ▾';
+    };
+    b.type = 'button'; b.dir = 'auto'; b.className = 'pop-btn';
     const list = document.createElement('div');
     list.className = 'pop-list'; list.hidden = true;
-    c.options.forEach(o => {
-      const l = document.createElement('label');
-      const cb = document.createElement('input');
-      cb.type = 'checkbox'; cb.checked = (f.set || []).indexOf(o) >= 0;
-      cb.onchange = () => {
-        const set = new Set(F[c.key] && F[c.key].set || []);
-        cb.checked ? set.add(o) : set.delete(o);
-        upd({ set: Array.from(set) }); label();
-      };
-      l.appendChild(cb); l.appendChild(document.createTextNode(o));
-      list.appendChild(l);
-    });
-    b.onclick = (ev) => { ev.stopPropagation(); list.hidden = !list.hidden; };
+    const fill = () => {
+      list.innerHTML = '';
+      const opts = filterOptions(c);
+      if (!opts.length) { list.innerHTML = '<span class="hint">No values yet</span>'; return; }
+      opts.forEach(o => {
+        const l = document.createElement('label');
+        l.dir = 'auto';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.checked = chosen().indexOf(o.v) >= 0;
+        cb.onchange = () => {
+          const set = new Set(chosen());
+          cb.checked ? set.add(o.v) : set.delete(o.v);
+          upd({ set: Array.from(set) }); label();
+        };
+        l.appendChild(cb); l.appendChild(document.createTextNode(o.t));
+        list.appendChild(l);
+      });
+    };
+    b.onclick = (ev) => {
+      ev.stopPropagation();
+      const open = list.hidden;
+      document.querySelectorAll('.pop-list').forEach(x => { x.hidden = true; });
+      if (open) { fill(); list.hidden = false; }
+    };
     list.onclick = ev => ev.stopPropagation();
-    document.addEventListener('click', () => { list.hidden = true; });
     label();
     wrap.appendChild(b); wrap.appendChild(list);
-  } else {
-    const i = document.createElement('input');
-    i.type = 'search'; i.placeholder = 'contains'; i.dir = 'auto'; i.value = f.q || '';
-    i.title = 'Type text to find. Type - to find blank cells.';
-    i.oninput = () => upd({ q: i.value.trim() });
-    wrap.appendChild(i);
   }
   return wrap;
 }
@@ -1013,6 +1032,7 @@ $('#reload').onclick = () => {
   load(false).then(() => toast('Up to date.'));
 };
 $('#search').oninput = e => { searchQ = e.target.value.trim(); renderBody(); };
+document.addEventListener('click', () => { document.querySelectorAll('.pop-list').forEach(x => { x.hidden = true; }); });
 $('#filtersBtn').onclick = () => { $('#filterPanel').hidden = !$('#filterPanel').hidden; };
 $('#clearFilters').onclick = () => { F = {}; searchQ = ''; $('#search').value = ''; saveFilters(); build(); };
 phoneMQ.addEventListener('change', () => { if (S.columns.length) build(); });
