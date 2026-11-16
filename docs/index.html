@@ -4,98 +4,83 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Our Next Home</title>
-<meta name="theme-color" content="#0e7490">
+<meta name="theme-color" content="#fbf6ef">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Rubik:wght@400;500&display=swap" rel="stylesheet">
 <script src="config.js"></script>
 <style>
+/* Warm and cozy theme: cream paper, terracotta accent, serif headings */
 :root {
-  --bg: #f6f7f9; --panel: #ffffff; --panel2: #fbfcfd; --head: #eef1f4; --line: #d9dde3; --text: #1f2933; --muted: #66727f;
-  --accent: #0e7490; --accent-ink: #ffffff; --danger: #b42318;
-  --ns-bg: #fff4c2; --ns-fg: #7a4b00;   /* Not seen */
-  --se-bg: #d6f5dc; --se-fg: #14532d;   /* Seen */
-  --nr-bg: #e7e9ec; --nr-fg: #6b7280;   /* Not relevant */
-  --dirty: #2563eb; --found: #dbeafe; --mine: #e0f2fe; --theirs: #f3f4f6;
+  --bg: #fbf6ef; --panel: #ffffff; --panel2: #fdf9f3; --head: #f5ece0; --line: #ecdfcf; --text: #3b2f25; --muted: #8a7563;
+  --accent: #c2410c; --accent-ink: #fff7ed; --accent-soft: #fbe3d3; --danger: #b42318;
+  --ns-bg: #fef3c7; --ns-fg: #78350f;   /* Not seen */
+  --se-bg: #dcfce7; --se-fg: #14532d;   /* Seen */
+  --nr-bg: #efe9e1; --nr-fg: #8a7563;   /* Not relevant */
+  --dirty: #c2410c; --found: #fdecd9; --mine: #fbe3d3; --theirs: #f5ece0;
+  --shadow: 0 1px 2px rgba(80, 50, 20, .06), 0 4px 14px rgba(80, 50, 20, .05);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #111418; --panel: #1a1e24; --panel2: #1f242b; --head: #232931; --line: #343b45; --text: #e6e9ed; --muted: #9aa5b1;
-    --accent: #22a3c2; --accent-ink: #06222a; --danger: #f97066;
-    --ns-bg: #3a3112; --ns-fg: #f5d77a; --se-bg: #12351f; --se-fg: #9be3b0; --nr-bg: #23272d; --nr-fg: #8a929c;
-    --dirty: #60a5fa; --found: #1e3a5f; --mine: #0c3446; --theirs: #262b32;
+    --bg: #1c1814; --panel: #26201a; --panel2: #2b241d; --head: #322a22; --line: #3d3329; --text: #f1e8dc; --muted: #a8998a;
+    --accent: #e0794a; --accent-ink: #2a1408; --accent-soft: #4a2a1a; --danger: #f97066;
+    --ns-bg: #43361a; --ns-fg: #f5d77a; --se-bg: #1d3a26; --se-fg: #9be3b0; --nr-bg: #322a22; --nr-fg: #a8998a;
+    --dirty: #e0794a; --found: #3f2c1d; --mine: #4a2a1a; --theirs: #322a22;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #111418; --panel: #1a1e24; --panel2: #1f242b; --head: #232931; --line: #343b45; --text: #e6e9ed; --muted: #9aa5b1;
-  --accent: #22a3c2; --accent-ink: #06222a; --danger: #f97066;
-  --ns-bg: #3a3112; --ns-fg: #f5d77a; --se-bg: #12351f; --se-fg: #9be3b0; --nr-bg: #23272d; --nr-fg: #8a929c;
-  --dirty: #60a5fa; --found: #1e3a5f; --mine: #0c3446; --theirs: #262b32;
+  --bg: #1c1814; --panel: #26201a; --panel2: #2b241d; --head: #322a22; --line: #3d3329; --text: #f1e8dc; --muted: #a8998a;
+  --accent: #e0794a; --accent-ink: #2a1408; --accent-soft: #4a2a1a; --danger: #f97066;
+  --ns-bg: #43361a; --ns-fg: #f5d77a; --se-bg: #1d3a26; --se-fg: #9be3b0; --nr-bg: #322a22; --nr-fg: #a8998a;
+  --dirty: #e0794a; --found: #3f2c1d; --mine: #4a2a1a; --theirs: #322a22;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3);
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--text); font: 14px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 "Rubik", "Segoe UI", system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; }
+.serif { font-family: "Fraunces", Georgia, "Times New Roman", serif; }
 button, input, select, textarea { font: inherit; color: inherit; }
-button { border: 1px solid var(--line); background: var(--panel); border-radius: 6px; padding: 5px 11px; cursor: pointer; white-space: nowrap; }
+button { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
 button:hover { border-color: var(--muted); }
-button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 500; }
+button.primary:hover { filter: brightness(1.06); }
 button.danger { color: var(--danger); }
-button.icon { border: 0; background: transparent; padding: 2px 5px; font-size: 15px; }
+button.icon { border: 0; background: transparent; padding: 4px 6px; font-size: 16px; border-radius: 8px; }
+button.icon:hover { background: var(--head); }
 button:disabled { opacity: .5; cursor: default; }
-input, select, textarea { border: 1px solid var(--line); border-radius: 5px; padding: 4px 7px; background: var(--panel); min-width: 0; }
+input, select, textarea { border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; background: var(--panel); min-width: 0; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
 textarea { resize: vertical; width: 100%; }
 a { color: inherit; }
 
-.topbar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.brand { font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 6px; }
+.topbar { display: flex; align-items: center; gap: 10px; padding: 18px 24px 10px; flex-wrap: wrap; max-width: 980px; width: 100%; margin: 0 auto; }
+.brand { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 26px; display: flex; align-items: center; gap: 8px; letter-spacing: -.01em; }
 .who { color: var(--muted); font-size: 13px; }
 .spacer { flex: 1; }
-.actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-#search { width: 220px; }
-#save.dirty { box-shadow: 0 0 0 2px var(--dirty); }
-.statusline { display: flex; gap: 12px; padding: 6px 16px; color: var(--muted); font-size: 12px; align-items: center; flex-wrap: wrap; }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#search { width: 210px; border-radius: 999px; padding: 6px 14px; background: var(--panel); }
+#save[hidden] { display: none; }
+#save.dirty { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+.statusline { display: flex; gap: 12px; padding: 4px 24px 10px; color: var(--muted); font-size: 13px; align-items: center; flex-wrap: wrap; max-width: 980px; width: 100%; margin: 0 auto; }
 .statusline .err { color: var(--danger); font-weight: 600; }
-.legend span { display: inline-block; padding: 1px 8px; border-radius: 10px; margin-right: 4px; }
 
-main { flex: 1; min-height: 0; padding: 0 14px 14px; display: flex; }
-.table-wrap { flex: 1; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
-table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
-thead th { position: sticky; z-index: 2; background: var(--head); text-align: left; font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-thead tr.labels th { top: 0; cursor: pointer; user-select: none; }
-thead tr.filters th { top: 33px; padding: 4px 6px; font-weight: 400; }
-thead th .arrow { color: var(--muted); font-size: 11px; }
-.filters input, .filters select { width: 100%; font-size: 12px; padding: 2px 5px; }
-.filters input[type=search] { width: 96px; }
-.filters th { max-width: 260px; }
-.filters th.c-description input[type=search] { width: 100%; }
-.range { display: flex; gap: 3px; }
-.range input { width: 44px; }
-th.c-actions, td.c-actions { position: sticky; right: 0; z-index: 1; background: inherit; box-shadow: -6px 0 8px -6px rgba(0,0,0,.25); }
-thead th.c-actions { z-index: 3; background: var(--head); }
-tbody td { padding: 5px 8px; border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent); vertical-align: top; max-width: 260px; }
-tbody tr.st-0 { background: var(--ns-bg); color: var(--ns-fg); }
-tbody tr.st-1 { background: var(--se-bg); color: var(--se-fg); }
-tbody tr.st-2 { background: var(--nr-bg); color: var(--nr-fg); }
-tbody tr.st-2 td:not(.c-actions):not(.c-status) { opacity: .75; }
-tbody tr.deleted td:not(.c-actions) { text-decoration: line-through; opacity: .45; }
-tbody tr.new td:first-child { box-shadow: inset 3px 0 0 var(--dirty); }
-td.dirty { box-shadow: inset 0 -2px 0 var(--dirty); }
-td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-td.c-description .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-width: 220px; cursor: pointer; }
-td.c-description .clamp.open { display: block; }
-td.c-status select { background: transparent; border-color: color-mix(in srgb, currentColor 35%, transparent); color: inherit; }
-td.c-actions { white-space: nowrap; }
+main { flex: 1; min-height: 0; padding: 0 0 14px; display: flex; }
+.range { display: flex; gap: 4px; }
+.range input { width: 70px; }
 .nowrap { white-space: nowrap; }
 .mini { font-size: 12px; text-decoration: none; margin-left: 4px; opacity: .85; }
 .wa { display: inline-block; background: #25d366; color: #fff; font-size: 10px; font-weight: 700; border-radius: 4px; padding: 0 4px; line-height: 15px; vertical-align: 1px; }
 .chat-btn { position: relative; }
 .heart { font-size: 17px; line-height: 1; padding: 0 3px; }
-.heart[aria-pressed="false"] { opacity: .55; }
-.heart:hover { transform: scale(1.15); }
-td.c-liked { text-align: center; }
+.heart[aria-pressed="false"] { opacity: .45; filter: grayscale(1); }
+.heart:hover { transform: scale(1.15); background: transparent !important; }
 .badge { position: absolute; top: -4px; right: -6px; background: var(--danger); color: #fff; border-radius: 9px; font-size: 10px; padding: 0 5px; line-height: 16px; font-weight: 700; }
 .empty { padding: 40px; text-align: center; color: var(--muted); }
 
@@ -107,26 +92,39 @@ td.c-liked { text-align: center; }
 .pop-list { max-height: 300px; overflow-y: auto; }
 .pop-btn { width: 100%; min-width: 120px; font-size: 12px; padding: 2px 5px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
 
-/* Cards (phone width) */
-.cards { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
-.card { border-radius: 10px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
-.card.st-0 { background: var(--ns-bg); color: var(--ns-fg); }
-.card.st-1 { background: var(--se-bg); color: var(--se-fg); }
-.card.st-2 { background: var(--nr-bg); color: var(--nr-fg); }
+/* Home cards: two calm lines, click to open the details */
+.cards { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 10px; max-width: 980px; width: 100%; margin: 0 auto; padding: 2px 24px 40px; }
+.card { background: var(--panel); border-radius: 16px; padding: 14px 18px; border: 1px solid var(--line); box-shadow: var(--shadow); cursor: pointer; transition: border-color .15s; }
+.card:hover { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); }
+.card.open { cursor: default; border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.card.st-2 { opacity: .62; }
+.card.st-2.open { opacity: 1; }
 .card.deleted { opacity: .45; text-decoration: line-through; }
-.card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
-.card-title { font-weight: 700; font-size: 15px; }
-.card-price { font-weight: 700; white-space: nowrap; }
-.card-facts { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 4px 0; font-size: 13px; }
-.card-desc { font-size: 13px; margin: 4px 0; }
-.card-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
-.card-row select { background: transparent; color: inherit; }
-#filterPanel { background: var(--panel); border-bottom: 1px solid var(--line); padding: 10px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.card.dirty { box-shadow: inset 3px 0 0 var(--dirty), var(--shadow); }
+.card-top { display: flex; gap: 10px; align-items: center; }
+.card-title { font-size: 16px; font-weight: 500; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.card-price { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 18px; white-space: nowrap; }
+.card-sub { display: flex; gap: 10px; align-items: center; margin: 4px 0 0 36px; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
+.card-sub .facts { flex: 1; min-width: 0; }
+.pill { border-radius: 999px; padding: 2px 10px; font-size: 12px; border: 0; cursor: pointer; appearance: none; -webkit-appearance: none; text-align: center; }
+select.pill { padding-right: 10px; }
+.pill.st-0 { background: var(--ns-bg); color: var(--ns-fg); }
+.pill.st-1 { background: var(--se-bg); color: var(--se-fg); }
+.pill.st-2 { background: var(--nr-bg); color: var(--nr-fg); }
+.unread { background: var(--accent); color: var(--accent-ink); border-radius: 999px; font-size: 11px; padding: 0 7px; line-height: 18px; }
+.card-more { margin: 12px 0 0 36px; padding-top: 12px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 8px; font-size: 14px; cursor: auto; }
+.card-more[hidden] { display: none; }
+.card-desc { white-space: pre-wrap; }
+.kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 4px 18px; font-size: 13px; }
+.kv b { font-weight: 400; color: var(--muted); margin-right: 4px; }
+.card-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.card .heart { font-size: 20px; width: 26px; }
+#filterPanel { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 12px 16px; margin: 0 24px 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
 #filterPanel[hidden] { display: none; }
 #filterPanel label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); }
 #filterPanel input, #filterPanel select { color: var(--text); }
 @media (min-width: 761px) {
-  #filterPanel:not([hidden]) { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; }
+  #filterPanel:not([hidden]) { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; max-width: 932px; width: calc(100% - 48px); margin: 0 auto 8px; }
   #filterPanel label { min-width: 120px; }
   #filterPanel input[type=search] { width: 150px; }
   #filterPanel .range input { width: 90px; }
@@ -191,11 +189,16 @@ dialog::backdrop { background: rgba(15, 23, 42, .4); }
 .center { margin: auto; padding: 30px; text-align: center; color: var(--muted); max-width: 520px; }
 
 @media (max-width: 760px) {
-  .topbar { padding: 8px 12px; }
+  .topbar { padding: 12px 12px 6px; }
+  .brand { font-size: 22px; }
   #search { width: 100%; order: 10; }
-  main { padding: 0 12px 12px; }
+  .statusline { padding: 2px 14px 8px; }
+  main { padding: 0 0 12px; }
+  .cards { padding: 2px 12px 30px; }
+  .card { padding: 12px 14px; }
+  .card-sub, .card-more { margin-left: 0; }
+  #filterPanel { margin: 0 12px 8px; }
   .form { grid-template-columns: 1fr; }
-  .statusline .legend { display: none; }
   .conflict { grid-template-columns: 1fr 1fr; }
   .conflict .k { grid-column: 1 / -1; font-weight: 600; }
 }
@@ -203,15 +206,15 @@ dialog::backdrop { background: rgba(15, 23, 42, .4); }
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">🏡 Our Next Home</div>
+  <div class="brand">Our next home</div>
   <span class="who" id="who"></span>
   <span class="spacer"></span>
-  <input id="search" type="search" placeholder="Search everything…" dir="auto">
+  <input id="search" type="search" placeholder="Search…" dir="auto">
   <div class="actions">
-    <button id="filtersBtn">⚲ Filters</button>
+    <button id="filtersBtn">Filters</button>
+    <button id="save" title="Save your changes to the sheet" hidden>Save</button>
     <button id="addBtn" class="primary">+ Add home</button>
-    <button id="save" title="Save your changes to the sheet">💾 Save</button>
-    <button id="reload" title="Load the latest from the sheet">⟳</button>
+    <button id="reload" class="icon" title="Load the latest from the sheet">⟳</button>
   </div>
 </header>
 <div id="filterPanel" hidden></div>
@@ -219,7 +222,6 @@ dialog::backdrop { background: rgba(15, 23, 42, .4); }
   <span id="count"></span>
   <span id="msg"></span>
   <span class="spacer"></span>
-  <span class="legend"><span class="st-0" style="background:var(--ns-bg);color:var(--ns-fg)">Not seen</span><span style="background:var(--se-bg);color:var(--se-fg)">Seen</span><span style="background:var(--nr-bg);color:var(--nr-fg)">Not relevant</span></span>
   <button id="clearFilters" class="icon" title="Clear all filters" hidden>✕ Clear filters</button>
 </div>
 <main id="main"><div class="center">Loading…</div></main>
@@ -281,6 +283,7 @@ let tmpSeq = 1;
 let F = store.get('onh.filters', {});             // filters[key] = {q} | {min,max} | {v} | {set}
 let SORT = store.get('onh.sort', null);           // {key, dir}
 let searchQ = '';
+const OPEN = new Set();   // ids of home cards showing their details
 
 // Only these columns get a filter (Roy's request)
 const FILTERABLE = ['liked', 'status', 'price', 'city', 'seller_name'];
@@ -449,42 +452,22 @@ function filterControl(c) {
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
-const phoneMQ = window.matchMedia('(max-width: 760px)');
 let builtFor = '';
 
 function build() {
-  const mode = phoneMQ.matches ? 'cards' : 'table';
+  // One layout (home cards) for every screen size; the phone just gets narrower cards
+  const mode = 'cards';
   const p = $('#filterPanel');
   p.innerHTML = '';
-  if (mode === 'table') {
-    const cols = viewColumns();
-    $('#main').innerHTML = '<div class="table-wrap"><table><thead><tr class="labels"></tr></thead><tbody></tbody></table></div>';
-    const labels = $('thead tr.labels');
-    cols.forEach(c => {
-      const th = document.createElement('th');
-      th.innerHTML = esc(c.icon || c.label) + ' <span class="arrow"></span>';
-      th.dataset.key = c.key;
-      th.title = (c.icon ? c.label + ' · ' : '') + 'Click to sort';
-      th.onclick = () => {
-        if (!SORT || SORT.key !== c.key) SORT = { key: c.key, dir: 'asc' };
-        else if (SORT.dir === 'asc') SORT.dir = 'desc';
-        else SORT = null;
-        saveFilters(); renderBody();
-      };
-      labels.appendChild(th);
-    });
-    const th = document.createElement('th'); th.className = 'c-actions'; th.textContent = 'Chat'; labels.appendChild(th);
-  } else {
-    $('#main').innerHTML = '<div class="cards" id="cards"></div>';
-    const sortL = document.createElement('label');
-    sortL.className = '';
-    sortL.innerHTML = 'Sort by<select id="sortSel"><option value="">Newest first</option>' +
-      viewColumns().map(c => `<option value="${c.key}:asc">${esc(c.label)} ↑</option><option value="${c.key}:desc">${esc(c.label)} ↓</option>`).join('') + '</select>';
-    p.appendChild(sortL);
-    const sel = sortL.querySelector('select');
-    sel.value = SORT ? SORT.key + ':' + SORT.dir : '';
-    sel.onchange = () => { const [k, d] = sel.value.split(':'); SORT = k ? { key: k, dir: d } : null; saveFilters(); renderBody(); };
-  }
+  $('#main').innerHTML = '<div class="cards" id="cards"></div>';
+  const sortL = document.createElement('label');
+  const SORTABLE = ['price', 'rooms', 'built_m2', 'plot_m2', 'city', 'status', 'visit_date'];
+  sortL.innerHTML = 'Sort by<select id="sortSel"><option value="">Newest first</option>' +
+    viewColumns().filter(c => SORTABLE.indexOf(c.key) >= 0).map(c => `<option value="${c.key}:asc">${esc(c.label)} ↑</option><option value="${c.key}:desc">${esc(c.label)} ↓</option>`).join('') + '</select>';
+  p.appendChild(sortL);
+  const sel = sortL.querySelector('select');
+  sel.value = SORT ? SORT.key + ':' + SORT.dir : '';
+  sel.onchange = () => { const [k, d] = sel.value.split(':'); SORT = k ? { key: k, dir: d } : null; saveFilters(); renderBody(); };
   // The few filters live in a panel opened by the ⚲ Filters button (no filter row under the headers)
   viewColumns().filter(canFilter).forEach(c => {
     const l = document.createElement('label');
@@ -557,52 +540,48 @@ function renderBody() {
   const all = rowsAll();
   const shown = sorted(all.filter(passes));
   const n = dirtyCount();
-  $('#save').textContent = n ? `💾 Save (${n})` : '💾 Save';
+  $('#save').textContent = n ? `💾 Save ${n} change${n === 1 ? '' : 's'}` : 'Save';
   $('#save').classList.toggle('dirty', n > 0);
+  $('#save').hidden = !n;
   $('#count').textContent = `${all.length} home${all.length === 1 ? '' : 's'}` + (shown.length !== all.length ? ` · ${shown.length} shown` : '') + (n ? ` · ${n} unsaved` : '');
   const af = activeFilters();
   $('#clearFilters').hidden = !af;
-  $('#filtersBtn').textContent = af ? `⚲ Filters (${af})` : '⚲ Filters';
+  $('#filtersBtn').textContent = af ? `Filters · ${af}` : 'Filters';
 
-  if (builtFor === 'table') {
-    document.querySelectorAll('thead tr.labels th').forEach(th => {
-      const a = th.querySelector('.arrow');
-      if (a) a.textContent = SORT && SORT.key === th.dataset.key ? (SORT.dir === 'asc' ? '▲' : '▼') : '';
-    });
-    const cols = viewColumns();
-    const tb = $('tbody');
-    if (!shown.length) {
-      tb.innerHTML = `<tr><td colspan="${cols.length + 1}" class="empty">${all.length ? 'No home matches the filters.' : 'No homes yet. Press <b>+ Add home</b> and paste a link.'}</td></tr>`;
-      return;
-    }
-    tb.innerHTML = shown.map(r => `<tr data-id="${esc(r.id)}" class="${statusClass(r)}${r._deleted ? ' deleted' : ''}${r._new ? ' new' : ''}">` +
-      cols.map(c => `<td class="c-${c.key}${isNumeric(c) ? ' num' : ''}${r._dirty.indexOf(c.key) >= 0 ? ' dirty' : ''}">${cellHtml(c, r)}</td>`).join('') +
-      `<td class="c-actions">${r._new ? '<span class="icon" title="Save first to chat">·</span>' : chatButton(r)}${actionButtons(r)}</td></tr>`).join('');
-  } else {
-    const box = $('#cards');
-    if (!shown.length) { box.innerHTML = `<div class="empty">${all.length ? 'No home matches the filters.' : 'No homes yet. Tap <b>+ Add home</b> and paste a link.'}</div>`; return; }
-    const sc = col('status'), bc = col('basement');
-    box.innerHTML = shown.map(r => {
-      const facts = [];
-      if (r.rooms !== '') facts.push(fmtNum(r.rooms) + ' rooms');
-      if (r.built_m2 !== '') facts.push(fmtNum(r.built_m2) + ' m² built');
-      if (r.plot_m2 !== '') facts.push(fmtNum(r.plot_m2) + ' m² plot');
-      if (r.basement) facts.push('Basement');
-      if (r.attic) facts.push('Attic');
-      const hc = S.columns.find(c => c.type === 'checkbox' && c.icon);
-      const extra = S.columns.filter(c => !c.icon && ['link', 'city', 'street', 'plot_m2', 'built_m2', 'rooms', 'basement', 'attic', 'description', 'price', 'seller_name', 'seller_phone', 'status'].indexOf(c.key) < 0 && norm(r[c.key]) !== '')
-        .map(c => `<div class="card-desc"><b>${esc(c.label)}:</b> <span dir="auto">${esc(c.type === 'date' ? fmtDate(r[c.key]) : r[c.key])}</span></div>`).join('');
-      return `<div class="card ${statusClass(r)}${r._deleted ? ' deleted' : ''}" data-id="${esc(r.id)}">
-        <div class="card-top">${hc ? cellHtml(hc, r) : ''}<div class="card-title" style="flex:1" dir="auto">${esc([r.street, r.city].filter(Boolean).join(', ') || 'No address yet')}${mapLinks(r)}</div>
+  const box = $('#cards');
+  if (!box) return;
+  if (!shown.length) { box.innerHTML = `<div class="empty">${all.length ? 'No home matches the filters.' : 'No homes yet. Press <b>+ Add home</b> and paste a link.'}</div>`; return; }
+  const hc = S.columns.find(c => c.type === 'checkbox' && c.icon);
+  // Keys shown on the two card lines or in the fixed parts of the details; any other column lands in the details grid
+  const SHOWN = ['liked', 'link', 'city', 'street', 'plot_m2', 'built_m2', 'rooms', 'basement', 'attic', 'description', 'price', 'seller_name', 'seller_phone', 'status'];
+  box.innerHTML = shown.map(r => {
+    const facts = [];
+    if (r.rooms !== '') facts.push(fmtNum(r.rooms) + ' rooms');
+    if (r.built_m2 !== '') facts.push(fmtNum(r.built_m2) + ' m²');
+    if (r.plot_m2 !== '') facts.push('plot ' + fmtNum(r.plot_m2) + ' m²');
+    if (r.basement) facts.push('basement');
+    if (r.attic) facts.push('attic');
+    const n = S.unread[r.id] || 0;
+    const open = OPEN.has(r.id);
+    const kv = S.columns.filter(c => c.key !== 'liked' && SHOWN.indexOf(c.key) < 0 && norm(r[c.key]) !== '')
+      .map(c => `<div><b>${esc(c.label)}</b><span dir="auto">${esc(c.type === 'date' ? fmtDate(r[c.key]) : r[c.key])}</span></div>`);
+    if (r.seller_name || r.seller_phone) kv.unshift(`<div><b>Seller</b><span dir="auto">${esc(r.seller_name)}</span> ${phoneLinks(r.seller_phone)}</div>`);
+    if (r.link) kv.unshift(`<div><b>Ad</b>${linkCell(r.link)}</div>`);
+    return `<div class="card ${statusClass(r)}${r._deleted ? ' deleted' : ''}${r._dirty.length || r._new ? ' dirty' : ''}${open ? ' open' : ''}" data-id="${esc(r.id)}">
+      <div class="card-top">${hc ? cellHtml(hc, r) : ''}
+        <div class="card-title"><span dir="auto">${esc([r.street, r.city].filter(Boolean).join(', ') || 'No address yet')}</span>${mapLinks(r)}</div>
         <div class="card-price">${r.price !== '' ? '₪' + fmtNum(r.price) : ''}</div></div>
-        <div class="card-facts">${facts.map(esc).join(' · ')}</div>
-        ${r.description ? `<div class="card-desc clamp" dir="auto">${esc(r.description)}</div>` : ''}
-        ${extra}
-        <div class="card-row">${r.seller_name ? `<span dir="auto">${esc(r.seller_name)}</span>` : ''} ${phoneLinks(r.seller_phone)}</div>
-        <div class="card-row">${sc ? cellHtml(sc, r) : ''} ${linkCell(r.link)} <span class="spacer"></span>${r._new ? '' : chatButton(r)}${actionButtons(r)}</div>
-      </div>`;
-    }).join('');
-  }
+      <div class="card-sub"><span class="facts">${esc(facts.join(' · '))}</span>
+        ${n ? `<span class="unread" title="New chat messages">💬 ${n}</span>` : ''}
+        <select class="pill ${statusClass(r)}" data-k="status" ${r._deleted ? 'disabled' : ''} title="Status">${STATUSES.map(o => `<option ${o === r.status ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></div>
+      <div class="card-more" ${open ? '' : 'hidden'}>
+        ${r.description ? `<div class="card-desc" dir="auto">${esc(r.description)}</div>` : ''}
+        ${kv.length ? `<div class="kv">${kv.join('')}</div>` : ''}
+        <div class="card-row">${r._new ? '<span class="hint">Save first to chat</span>' : `<button data-act="chat">💬 Chat${n ? ' (' + n + ')' : ''}</button>`}
+          <span class="spacer"></span>${actionButtons(r)}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // Clicks and changes inside the table / cards
@@ -615,9 +594,17 @@ document.addEventListener('click', ev => {
     return;
   }
   const btn = ev.target.closest('[data-act]');
-  const clamp = ev.target.closest('.clamp');
-  if (clamp && !btn) { clamp.classList.toggle('open'); return; }
-  if (!btn) return;
+  if (!btn) {
+    // A click on a card (not on a link, control or its open details) opens or closes its details
+    const card = ev.target.closest('.card[data-id]');
+    if (!card || ev.target.closest('a, button, select, input, textarea, label, .card-more')) return;
+    const id = card.dataset.id;
+    OPEN.has(id) ? OPEN.delete(id) : OPEN.add(id);
+    const more = card.querySelector('.card-more');
+    if (more) more.hidden = !OPEN.has(id);
+    card.classList.toggle('open', OPEN.has(id));
+    return;
+  }
   const holder = btn.closest('[data-id]');
   if (!holder) return;
   const id = holder.dataset.id;
@@ -1016,7 +1003,7 @@ function load(first) {
     S = s;
     $('#who').textContent = s.me ? '· ' + s.me : '';
     msg('');
-    if (first || colsChanged || builtFor !== (phoneMQ.matches ? 'cards' : 'table')) build();
+    if (first || colsChanged || !builtFor) build();
     else renderBody();
     if (chatId) drawChatHead();
   }).catch(err => {
@@ -1035,7 +1022,6 @@ $('#search').oninput = e => { searchQ = e.target.value.trim(); renderBody(); };
 document.addEventListener('click', () => { document.querySelectorAll('.pop-list').forEach(x => { x.hidden = true; }); });
 $('#filtersBtn').onclick = () => { $('#filterPanel').hidden = !$('#filterPanel').hidden; };
 $('#clearFilters').onclick = () => { F = {}; searchQ = ''; $('#search').value = ''; saveFilters(); build(); };
-phoneMQ.addEventListener('change', () => { if (S.columns.length) build(); });
 window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); }
 });
