@@ -248,7 +248,12 @@ dialog::backdrop { background: rgba(15, 23, 42, .4); }
 
 <script>
 'use strict';
-const STATUSES = ['Not seen', 'Seen', 'Not relevant'];
+const STATUSES = ['Not seen', 'Seen', 'Not relevant'];   // the values kept in the sheet (don't rename)
+// What the page shows for each status, and the default list order (best first)
+const STATUS_LABEL = { 'Seen': 'יש מצב!', 'Not seen': 'שווה בדיקה', 'Not relevant': 'לא מתאים' };
+const STATUS_ORDER = ['Seen', 'Not seen', 'Not relevant'];
+const optLabel = o => STATUS_LABEL[o] || o;
+const statusRank = v => { const i = STATUS_ORDER.indexOf(v); return i < 0 ? 1 : i; };
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const norm = v => (v === null || v === undefined || v === false) ? '' : String(v).trim();
@@ -358,7 +363,7 @@ function optionOf(c, v) {
 // The choices of a dropdown filter: fixed for checkbox/status, the values in the list for text columns
 function filterOptions(c) {
   if (c.type === 'checkbox') return [{ v: 'yes', t: c.icon || 'Yes' }, { v: 'no', t: c.icon ? 'Not ' + c.icon : 'No' }];
-  if (c.type === 'select') return c.options.map(o => ({ v: o, t: o }));
+  if (c.type === 'select') return (c.key === 'status' ? STATUS_ORDER : c.options).map(o => ({ v: o, t: optLabel(o) }));
   const vals = new Set(rowsAll().map(r => optionOf(c, r[c.key])));
   ((F[c.key] && F[c.key].set) || []).forEach(v => vals.add(v));   // keep chosen values that vanished
   const list = Array.from(vals).filter(v => v !== '').sort((a, b) => a.localeCompare(b, 'he'));
@@ -376,13 +381,15 @@ function activeFilters() {
 }
 
 function sorted(list) {
-  if (!SORT) return list.slice().sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+  // Default: יש מצב! first, then שווה בדיקה, then לא מתאים; newest first inside each group
+  if (!SORT) return list.slice().sort((a, b) => statusRank(a.status) - statusRank(b.status) || (b.created_at || 0) - (a.created_at || 0));
   const c = viewColumns().find(x => x.key === SORT.key);
   if (!c) return list;
   const dir = SORT.dir === 'desc' ? -1 : 1;
   return list.slice().sort((a, b) => {
     let x = a[c.key], y = b[c.key];
-    if (c.type === 'select') { x = c.options.indexOf(x); y = c.options.indexOf(y); }
+    if (c.key === 'status') { x = statusRank(x); y = statusRank(y); }
+    else if (c.type === 'select') { x = c.options.indexOf(x); y = c.options.indexOf(y); }
     const bx = norm(x) === '', by = norm(y) === '';
     if (bx || by) return bx === by ? 0 : bx ? 1 : -1;   // blanks last
     if (isNumeric(c) || c.type === 'select' || c.type === 'checkbox') return (Number(x) - Number(y)) * dir;
@@ -462,7 +469,7 @@ function build() {
   $('#main').innerHTML = '<div class="cards" id="cards"></div>';
   const sortL = document.createElement('label');
   const SORTABLE = ['price', 'rooms', 'built_m2', 'plot_m2', 'city', 'status', 'visit_date'];
-  sortL.innerHTML = 'Sort by<select id="sortSel"><option value="">Newest first</option>' +
+  sortL.innerHTML = 'Sort by<select id="sortSel"><option value="">Best first</option>' +
     viewColumns().filter(c => SORTABLE.indexOf(c.key) >= 0).map(c => `<option value="${c.key}:asc">${esc(c.label)} ↑</option><option value="${c.key}:desc">${esc(c.label)} ↓</option>`).join('') + '</select>';
   p.appendChild(sortL);
   const sel = sortL.querySelector('select');
@@ -511,7 +518,7 @@ function cellHtml(c, r) {
     case 'number': return fmtNum(v);
     case 'checkbox': if (c.icon) return `<button class="icon heart" data-heart="${c.key}" ${r._deleted ? 'disabled' : ''} title="${esc(c.label)}" aria-pressed="${!!v}">${v ? esc(c.icon) : '🤍'}</button>`;
       return `<input type="checkbox" data-k="${c.key}" ${v ? 'checked' : ''} ${r._deleted ? 'disabled' : ''} aria-label="${esc(c.label)}">`;
-    case 'select': return `<select data-k="${c.key}" ${r._deleted ? 'disabled' : ''}>${c.options.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    case 'select': return `<select data-k="${c.key}" ${r._deleted ? 'disabled' : ''}>${c.options.map(o => `<option value="${esc(o)}" ${o === v ? 'selected' : ''}>${esc(optLabel(o))}</option>`).join('')}</select>`;
     case 'phone': return phoneLinks(v);
     case 'longtext': return v ? `<div class="clamp" dir="auto" title="Click to expand">${esc(v)}</div>` : '';
     case 'date': return v ? `<span class="nowrap">${esc(fmtDate(v))}</span>` : '';
@@ -573,7 +580,7 @@ function renderBody() {
         <div class="card-price">${r.price !== '' ? '₪' + fmtNum(r.price) : ''}</div></div>
       <div class="card-sub"><span class="facts">${esc(facts.join(' · '))}</span>
         ${n ? `<span class="unread" title="New chat messages">💬 ${n}</span>` : ''}
-        <select class="pill ${statusClass(r)}" data-k="status" ${r._deleted ? 'disabled' : ''} title="Status">${STATUSES.map(o => `<option ${o === r.status ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></div>
+        <select class="pill ${statusClass(r)}" data-k="status" ${r._deleted ? 'disabled' : ''} title="Status">${STATUS_ORDER.map(o => `<option value="${esc(o)}" ${o === r.status ? 'selected' : ''}>${esc(optLabel(o))}</option>`).join('')}</select></div>
       <div class="card-more" ${open ? '' : 'hidden'}>
         ${r.description ? `<div class="card-desc" dir="auto">${esc(r.description)}</div>` : ''}
         ${kv.length ? `<div class="kv">${kv.join('')}</div>` : ''}
@@ -640,7 +647,7 @@ function inputFor(c, v) {
   switch (c.type) {
     case 'longtext': return `<textarea ${a} rows="3" dir="auto">${esc(v)}</textarea>`;
     case 'checkbox': return `<input type="checkbox" ${a} ${v ? 'checked' : ''}>`;
-    case 'select': return `<select ${a}>${c.options.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    case 'select': return `<select ${a}>${c.options.map(o => `<option value="${esc(o)}" ${o === v ? 'selected' : ''}>${esc(optLabel(o))}</option>`).join('')}</select>`;
     case 'date': return `<input type="date" ${a} value="${esc(v)}">`;
     case 'number': case 'money': return `<input type="text" inputmode="decimal" ${a} value="${esc(v === '' ? '' : fmtNum(v))}">`;
     case 'phone': return `<input type="tel" ${a} value="${esc(v)}" dir="ltr">`;
@@ -846,7 +853,7 @@ function showConflicts(list) {
     ${list.map((c, i) => {
       const h = S.homes.find(x => x.id === c.id) || {};
       const k = col(c.key) || { label: c.key };
-      const show = v => esc(v === true ? 'yes' : v === false ? 'no' : (v === '' ? '(blank)' : v));
+      const show = v => esc(v === true ? 'yes' : v === false ? 'no' : (v === '' ? '(blank)' : c.key === 'status' ? optLabel(v) : v));
       return `<div class="hint" dir="auto">${esc([h.street, h.city].filter(Boolean).join(', ') || 'Home')}</div>
       <div class="conflict"><div class="k">${esc(k.label)}</div>
         <label class="mine"><input type="radio" name="c${i}" value="mine" checked><span dir="auto">Mine: ${show(c.mine)}</span></label>
@@ -895,7 +902,7 @@ function closeChat() {
 
 function drawChatHead() {
   const r = homeById(chatId) || {};
-  const bits = [r.price !== '' && r.price !== undefined ? '₪' + fmtNum(r.price) : '', r.rooms ? fmtNum(r.rooms) + ' rooms' : '', r.status].filter(Boolean);
+  const bits = [r.price !== '' && r.price !== undefined ? '₪' + fmtNum(r.price) : '', r.rooms ? fmtNum(r.rooms) + ' rooms' : '', r.status ? optLabel(r.status) : ''].filter(Boolean);
   $('#chatTitle').innerHTML = `<b dir="auto">${esc([r.street, r.city].filter(Boolean).join(', ') || 'Home')}</b>${mapLinks(r)}<div class="hint">${esc(bits.join(' · '))} ${linkCell(r.link)}</div>`;
 }
 
